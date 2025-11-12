@@ -1,0 +1,35 @@
+version: 2
+
+models:
+  # =============================================================================
+  # kpi_viewing_hours_by_time : Total viewing hours by day and week
+  # =============================================================================
+  - name: kpi_viewing_hours_by_time
+    description: |
+      KPI showing total viewing hours aggregated by day and week.
+      
+      This metric helps the Programming Direction understand viewing patterns
+      over time and identify trends.
+      
+    columns:
+      - name: full_date
+        description: "Date of viewing"
+        
+      - name: year
+        description: "Year"
+        
+      - name: quarter
+        description: "Quarter"
+        
+      - name: month
+        description: "Month"
+        
+      - name: day_of_week
+        description: "Day of week name"
+        
+      - name: week_start_date
+        description: "Start date of the week (Monday)"
+        
+      - name: total_viewing_hours
+        description: "Total viewing hours for the day"
+

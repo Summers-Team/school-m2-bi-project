@@ -1,0 +1,85 @@
+version: 2
+
+models:
+  # =============================================================================
+  # int_viewing_enriched : Enriched viewing logs with user and content context
+  # =============================================================================
+  - name: int_viewing_enriched
+    description: |
+      Intermediate model that enriches viewing logs with user and content information.
+      
+      This model joins base__viewing_logs with base__users and base__contents to create
+      a comprehensive dataset ready for fact table creation. It calculates key metrics
+      like completion_rate and is_completed_view.
+      
+      This is the foundation for building the fct_viewings fact table.
+      
+    columns:
+      - name: session_id
+        description: "Unique viewing session identifier"
+        tests:
+          - not_null
+          
+      - name: user_id
+        description: "User identifier (foreign key to base_users)"
+        tests:
+          - not_null
+          
+      - name: content_id
+        description: "Content identifier (foreign key to base_contents)"
+        tests:
+          - not_null
+          
+      - name: watch_duration_seconds
+        description: "Actual viewing duration in seconds"
+        tests:
+          - not_null
+          
+      - name: total_duration_minutes
+        description: "Total content duration in minutes"
+        tests:
+          - not_null
+          
+      - name: view_duration_minutes
+        description: "Viewing duration converted to minutes (calculated)"
+        tests:
+          - not_null
+          
+      - name: completion_rate
+        description: "Percentage of content viewed (watch_duration_seconds / total_duration_seconds)"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 0
+              max_value: 1
+              
+      - name: is_completed_view
+        description: "Boolean indicator if content was viewed >= 90%"
+        tests:
+          - not_null
+          
+      - name: start_timestamp
+        description: "Viewing start timestamp"
+        tests:
+          - not_null
+          
+      - name: end_timestamp
+        description: "Viewing end timestamp"
+        tests:
+          - not_null
+          
+      - name: viewing_date
+        description: "Date of viewing (extracted from start_timestamp)"
+        tests:
+          - not_null
+          
+      - name: device_type
+        description: "Device type used for viewing"
+        tests:
+          - not_null
+          
+      - name: os
+        description: "Device operating system"
+        tests:
+          - not_null
+

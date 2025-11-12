@@ -10,6 +10,8 @@ projet_m2_bi:
       threads: 1
       location: ${region}
 
+  target: prod
+  outputs:
     prod:
       type: bigquery
       method: service-account

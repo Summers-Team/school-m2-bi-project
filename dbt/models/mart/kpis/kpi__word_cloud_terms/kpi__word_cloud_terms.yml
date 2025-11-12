@@ -1,0 +1,32 @@
+version: 2
+
+models:
+  # =============================================================================
+  # kpi_word_cloud_terms : Most frequent terms in social media comments by show
+  # =============================================================================
+  - name: kpi_word_cloud_terms
+    description: |
+      KPI showing the most frequent terms in social media comments for each show.
+      
+      This metric helps identify key themes and topics discussed by viewers.
+      Useful for creating word clouds in Power BI dashboards.
+      
+      Only terms longer than 2 characters are included, and common French stop words
+      are filtered out.
+      
+    columns:
+      - name: content_title_mentioned
+        description: "Content title mentioned in social media"
+        
+      - name: series_name
+        description: "Series name (if matched)"
+        
+      - name: term
+        description: "Word/term extracted from mention text"
+        
+      - name: term_frequency
+        description: "Number of times this term appears for this content"
+        
+      - name: term_rank
+        description: "Rank of the term for this content (1 = most frequent)"
+

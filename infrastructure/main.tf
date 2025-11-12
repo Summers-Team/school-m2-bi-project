@@ -17,6 +17,7 @@ provider "google" {
   region  = "europe-west9"
 }
 
+# Terraform state bucket
 resource "google_storage_bucket" "terraform_state" {
   name          = "test-terraform-473818-tfstate"
   location      = "europe-west9"
@@ -32,8 +33,8 @@ resource "google_storage_bucket" "terraform_state" {
 }
 
 # Ingested data bucket
-resource "google_storage_bucket" "static" {
- name          = "test-terraform-473818-ingest-data"
+resource "google_storage_bucket" "ingested_data" {
+ name          = "test-terraform-473818-ingested-data"
  location      = "europe-west9"
  storage_class = "STANDARD"
 
@@ -45,7 +46,7 @@ resource "google_storage_bucket_object" "default" {
  name         = "test.csv"
  source       = "test.csv"
  content_type = "text/plain"
- bucket       = google_storage_bucket.static.id
+ bucket       = google_storage_bucket.ingested_data.id
 }
 
 # Dev dataset

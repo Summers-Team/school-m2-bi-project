@@ -12,4 +12,5 @@ dependencies = [
     "prefect-dbt[bigquery]>=0.7.8",
     "prefect-gcp>=0.6.10",
     "pyyaml>=6.0.3",
+    "faker>=37.11.0",
 ]

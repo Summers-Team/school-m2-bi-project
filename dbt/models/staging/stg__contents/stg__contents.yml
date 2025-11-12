@@ -1,0 +1,73 @@
+version: 2
+
+models:
+  # =============================================================================
+  # stg_contents : Catalogue de contenus nettoyé
+  # =============================================================================
+  - name: stg_contents
+    description: |
+      Catalogue de contenus (séries, épisodes) nettoyé et standardisé.
+      
+      Cette table contient tous les programmes disponibles sur la plateforme BigMedia.
+      Elle sert de référence pour les dimensions et les analyses de performance.
+      
+    columns:
+      - name: content_id
+        description: "Identifiant unique du contenu (clé primaire)"
+        tests:
+          - unique
+          - not_null
+          
+      - name: title
+        description: "Titre complet de l'épisode ou du film"
+        tests:
+          - not_null
+          
+      - name: series_name
+        description: "Nom de la série parente"
+        tests:
+          - not_null
+          
+      - name: season_number
+        description: "Numéro de la saison (1, 2, 3...)"
+        tests:
+          - not_null
+          
+      - name: episode_number
+        description: "Numéro de l'épisode dans la saison"
+        tests:
+          - not_null
+          
+      - name: genre
+        description: "Genre principal du contenu"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Aventure', 'Comédie', 'Éducatif', 'Science-Fiction', 'Fantaisie']
+              
+      - name: target_age_group
+        description: "Tranche d'âge cible du contenu"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['3-5 ans', '6-8 ans', '9-12 ans']
+              
+      - name: production_type
+        description: "Type de production (Original BigMedia ou Achat externe)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Original BigMedia', 'Achat']
+              
+      - name: release_date
+        description: "Date de première diffusion du contenu"
+        tests:
+          - not_null
+          
+      - name: duration_minutes
+        description: "Durée du contenu en minutes"
+        tests:
+          - not_null
+          
+      - name: _loaded_at
+        description: "Timestamp de chargement dans la couche staging"

@@ -1,0 +1,53 @@
+version: 2
+
+models:
+  # =============================================================================
+  # base_users : Cleaned and deduplicated users
+  # =============================================================================
+  - name: base_users
+    description: |
+      BigMedia VoD service users cleaned and deduplicated (base layer).
+      
+      This table contains anonymized information of registered users.
+      It serves as a base for intermediate models (int_) and then dimensions (dim_).
+      
+      Data quality transformations applied:
+      - TRIM on text fields
+      - UPPER normalization for country codes
+      - Deduplication by user_id (keeps oldest registration date)
+      
+    columns:
+      - name: user_id
+        description: "Unique user identifier (primary key)"
+        tests:
+          - unique
+          - not_null
+          
+      - name: registration_date
+        description: "Service registration date"
+        tests:
+          - not_null
+          
+      - name: country
+        description: "User country code (ISO 3166-1 alpha-2)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['FR', 'BE', 'CH', 'LU']
+              
+      - name: age_group
+        description: "Declared age group of the user (parent)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['18-24', '25-34', '35-44', '45-54']
+              
+      - name: subscription_type
+        description: "Subscription type (always Free for BigMedia)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Gratuit']
+              
+      - name: _loaded_at
+        description: "Timestamp of loading into the base layer"
