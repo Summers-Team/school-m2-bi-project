@@ -1,6 +1,6 @@
 terraform {
   backend "gcs" {
-    bucket = "test-terraform-473818-tfstate"
+    bucket = var.state_bucket
     prefix = "terraform/state"
   }
 
@@ -13,14 +13,14 @@ terraform {
 }
 
 provider "google" {
-  project = "test-terraform-473818"
-  region  = "europe-west9"
+  project = var.project_id
+  region  = var.region
 }
 
 # Terraform state bucket
 resource "google_storage_bucket" "terraform_state" {
-  name          = "test-terraform-473818-tfstate"
-  location      = "europe-west9"
+  name          = var.state_bucket
+  location      = var.region
   force_destroy = true
 
   versioning {
@@ -34,25 +34,17 @@ resource "google_storage_bucket" "terraform_state" {
 
 # Ingested data bucket
 resource "google_storage_bucket" "ingested_data" {
- name          = "test-terraform-473818-ingested-data"
- location      = "europe-west9"
+ name          = var.ingested_data_bucket
+ location      = var.region
  storage_class = "STANDARD"
 
  uniform_bucket_level_access = true
 }
 
-# Test on local csv file
-resource "google_storage_bucket_object" "default" {
- name         = "test.csv"
- source       = "test.csv"
- content_type = "text/plain"
- bucket       = google_storage_bucket.ingested_data.id
-}
-
 # Dev dataset
 resource "google_bigquery_dataset" "dev_dataset" {
-  dataset_id                  = "test_terraform_473818_dev"
-  location                    = "europe-west9"
+  dataset_id                  = var.bq_dev_dataset_id
+  location                    = var.region
   description                 = "Development dataset for BI project"
   friendly_name               = "BI Dataset (dev)"
   default_table_expiration_ms = 7776000000 # 90 days
@@ -60,33 +52,33 @@ resource "google_bigquery_dataset" "dev_dataset" {
 
 # Prod dataset
 resource "google_bigquery_dataset" "prod_dataset" {
-  dataset_id    = "test_terraform_473818_prod"
-  location      = "europe-west9"
+  dataset_id    = var.bq_prod_dataset_id
+  location      = var.region
   description   = "Production dataset for BI project"
   friendly_name = "BI Dataset (prod)"
 }
 
 # Service account for dbt and minimal IAM bindings
 resource "google_service_account" "dbt_sa" {
-  account_id   = "test-terraform-473818-sa"
+  account_id   = var.sa_account_id
   display_name = "DBT service account"
 }
 
 # Grant permissions required for dbt workflows (adjust as needed)
 resource "google_project_iam_member" "sa_bq_dataeditor" {
-  project = "test-terraform-473818"
+  project = var.project_id
   role    = "roles/bigquery.dataEditor"
   member  = "serviceAccount:${google_service_account.dbt_sa.email}"
 }
 
 resource "google_project_iam_member" "sa_bq_jobuser" {
-  project = "test-terraform-473818"
+  project = var.project_id
   role    = "roles/bigquery.jobUser"
   member  = "serviceAccount:${google_service_account.dbt_sa.email}"
 }
 
 resource "google_project_iam_member" "sa_storage_admin" {
-  project = "test-terraform-473818"
+  project = var.project_id
   role    = "roles/storage.objectAdmin"
   member  = "serviceAccount:${google_service_account.dbt_sa.email}"
 }
