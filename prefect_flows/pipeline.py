@@ -203,7 +203,7 @@ def test_dbt_models(target: str = "dev"):
     return result
 
 
-@flow(name="pipeline-dbt-complet", log_prints=True)
+@flow(name="dbt_full_pipeline", log_prints=True)
 def dbt_full_pipeline(target: str = "dev"):
     """
     Pipeline complète dbt : run + test

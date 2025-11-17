@@ -68,6 +68,11 @@ models:
         description: "Durée du contenu en minutes"
         tests:
           - not_null
+
+      - name: production_cost_euros
+        description: "Production cost in euros"
+        tests:
+          - not_null
           
       - name: _loaded_at
         description: "Timestamp de chargement dans la couche staging"

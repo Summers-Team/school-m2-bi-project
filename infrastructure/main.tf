@@ -34,11 +34,11 @@ resource "google_storage_bucket" "terraform_state" {
 
 # Ingested data bucket
 resource "google_storage_bucket" "ingested_data" {
- name          = var.ingested_data_bucket
- location      = var.region
- storage_class = "STANDARD"
+  name          = var.ingested_data_bucket
+  location      = var.region
+  storage_class = "STANDARD"
 
- uniform_bucket_level_access = true
+  uniform_bucket_level_access = true
 }
 
 # Dev dataset

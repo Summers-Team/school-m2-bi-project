@@ -73,6 +73,11 @@ models:
         description: "Content duration in minutes"
         tests:
           - not_null
+
+      - name: production_cost_euros
+        description: "Production cost in euros"
+        tests:
+          - not_null
           
       - name: _loaded_at
         description: "Timestamp of loading into the base layer"

@@ -18,8 +18,9 @@ dim_date AS (
         EXTRACT(YEAR FROM date_day) AS year,
         EXTRACT(QUARTER FROM date_day) AS quarter,
         EXTRACT(MONTH FROM date_day) AS month,
+        EXTRACT(WEEK FROM date_day) AS week_number,
         FORMAT_DATE('%A', date_day) AS day_of_week,
-        CASE 
+        CASE
             WHEN EXTRACT(DAYOFWEEK FROM date_day) IN (1, 7) THEN TRUE
             ELSE FALSE
         END AS is_weekend
