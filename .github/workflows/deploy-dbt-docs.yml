@@ -1,7 +1,8 @@
+---
 name: Deploy dbt Docs to GitHub Pages
 
 # This workflow generates dbt documentation and deploys it to GitHub Pages
-# 
+#
 # Setup Required:
 # 1. Go to repository Settings > Pages
 # 2. Under "Build and deployment", set Source to "GitHub Actions"
@@ -23,8 +24,10 @@ permissions:
   pages: write
   id-token: write
 
-# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
-# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+# Allow only one concurrent deployment, skipping runs queued between
+# the run in-progress and latest queued.
+# However, do NOT cancel in-progress runs as we want to allow these
+# production deployments to complete.
 concurrency:
   group: "pages"
   cancel-in-progress: false
@@ -53,7 +56,8 @@ jobs:
       - name: Generate dbt docs
         run: |
           cd dbt
-          # Create a minimal profiles.yml for docs generation (no connection needed)
+          # Create a minimal profiles.yml for docs generation
+          # (no connection needed)
           cat > profiles.yml << EOF
           projet_m2_bi:
             outputs:
@@ -68,8 +72,11 @@ jobs:
           EOF
           # Parse the project first
           uv run --project .. dbt parse --profiles-dir .
-          # Generate documentation without catalog (no database connection required)
-          uv run --project .. dbt docs generate --profiles-dir . --empty-catalog --no-compile
+          # Generate documentation without catalog
+          # (no database connection required)
+          uv run --project .. \
+            dbt docs generate --profiles-dir . \
+            --empty-catalog --no-compile
         continue-on-error: false
 
       - name: Prepare docs for GitHub Pages
@@ -87,7 +94,10 @@ jobs:
             <link rel="canonical" href="./index.html">
           </head>
           <body>
-            <p>Redirecting to <a href="./index.html">dbt documentation</a>...</p>
+            <p>
+              Redirecting to
+              <a href="./index.html">dbt documentation</a>...
+            </p>
           </body>
           </html>
           EOF
