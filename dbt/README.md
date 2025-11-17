@@ -15,6 +15,17 @@ The dbt documentation is automatically generated and deployed to GitHub Pages on
 #### Local Documentation Preview
 To preview the dbt documentation locally:
 
+**Option 1: Using mise tasks (recommended)**
+```bash
+# Generate and serve documentation in one command
+mise run dbt:docs:serve
+
+# Or generate only
+mise run dbt:docs:generate
+```
+
+**Option 2: Using uv directly**
+
 1. **Generate the documentation:**
    ```bash
    cd dbt

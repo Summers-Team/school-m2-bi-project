@@ -1,5 +1,16 @@
 name: Deploy dbt Docs to GitHub Pages
 
+# This workflow generates dbt documentation and deploys it to GitHub Pages
+# 
+# Setup Required:
+# 1. Go to repository Settings > Pages
+# 2. Under "Build and deployment", set Source to "GitHub Actions"
+# 3. For more details, see .github/GITHUB_PAGES_SETUP.md
+#
+# The workflow runs automatically on:
+# - Push to main branch
+# - Manual trigger via workflow_dispatch
+
 on:
   push:
     branches:
