@@ -20,6 +20,8 @@ Most of the repetitive setup can be automated through the tasks declared in `mis
 2. **Authenticate gcloud:** `mise run gcloud:auth` ensures the CLI is logged in, sets the active project from `.env`, and prepares application-default credentials for OpenTofu.
 3. **Provision the Terraform state bucket:** `mise run gcloud:provide_state_bucket` idempotently creates `gs://${TERRAFORM_STATE_BUCKET}` (using the optional `TERRAFORM_STATE_BUCKET_LOCATION`) via `gcloud storage buckets create`, exactly as documented in the [Cloud Storage quickstart](https://cloud.google.com/storage/docs/discover-object-storage-gcloud#local-shell).
 4. **Prepare backend prerequisites:** `mise run infra:provide_backend` depends on the previous steps, so running `mise run infra:init` or `mise run infra:plan` will automatically ensure the remote state bucket exists before touching OpenTofu.
+5. **Generate the service-account key:** `mise run gcloud:create_sa_key --email <sa-email>` writes `.secrets/sa_key.json` (override with `--output` if needed, or add `--dry-run` to preview). The command reads `GCLOUD_SA_EMAIL` from the environment when the flag is omitted.
+6. **Capture Terraform outputs:** `mise run infra:outputs --file infrastructure/terraform-outputs.json` runs `tofu output -json` after `infra:init` and stores the JSON alongside your IaC.
 
 You can still perform the steps manually if you prefer; the remainder of this guide documents the underlying workflow.
 
@@ -50,7 +52,14 @@ You can still perform the steps manually if you prefer; the remainder of this gu
    ```bash
    tofu output -json > terraform-outputs.json
    ```
-   Keep this JSON file alongside the Terraform configuration (default path consumed by the profile generator).
+   Keep this JSON file alongside the Terraform configuration (default path consumed by the profile generator). If you prefer automation, run `mise run infra:outputs --file infrastructure/terraform-outputs.json` (it defaults to that path) after `mise run infra:init` to capture the outputs.
+
+6. **Create and store the service account key (if required)**
+   ```bash
+   # manual alternative if you do not use mise
+   gcloud iam service-accounts keys create .secrets/sa_key.json --iam-account <sa-email>
+   ```
+   `<sa-email>` is available in the Terraform outputs. The setup module automatically uses `.secrets/sa_key.json` to create the GCP credentials block. You can also run `mise run gcloud:create_sa_key --email <sa-email>` (with optional `--output` and `--dry-run`) to reuse the automated workflow described above.
 
 5. **Generate the dbt profiles and Prefect blocks**
    
@@ -85,11 +94,7 @@ You can still perform the steps manually if you prefer; the remainder of this gu
      - `dbt-operation-test-{target}` - dbt test operation per target
      - `dbt-operation-debug-{target}` - dbt debug operation per target
 
-6. **Create and store the service account key (if required)**
-   ```bash
-   gcloud iam service-accounts keys create .secrets/sa_key.json --iam-account <sa-email>
-   ```
-   `<sa-email>` is available in the Terraform outputs. The setup module automatically uses `.secrets/sa_key.json` to create the GCP credentials block.
+
 
 ## Setup Profiles Module
 

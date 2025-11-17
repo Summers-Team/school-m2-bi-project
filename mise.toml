@@ -7,6 +7,7 @@ uv = 'latest'
 '_'.file = { path = ".env" }
 TF_LOG = { value = "DEBUG" }
 
+GCLOUD_SA_EMAIL = { value = "{{env.GCLOUD_SA_ID}}@{{env.GCLOUD_PROJECT}}.iam.gserviceaccount.com" }
 TF_VAR_region = { value = "{{env.GCLOUD_REGION}}" }
 TF_VAR_project_id = { value = "{{env.GCLOUD_PROJECT}}" }
 
@@ -34,7 +35,7 @@ run = 'infrastructure/scripts/sync_vars'
 
 [tasks."infra:init"]
 description = "Run 'opentofu init' in the infrastructure directory."
-sources = ["infrastructure/providers.tf", ".env", "infrastructure/.secrets/**"]
+sources = ["infrastructure/providers.tf", ".env"]
 depends = ["infra:sync_vars", "infra:provide_backend"]
 usage = '''
 flag "--enabled-gcp-backend-config" help="Enable GCP backend configuration during init" negate="--disable-gcp-backend-config" default=#true
@@ -55,13 +56,26 @@ fi
 
 [tasks."infra:plan"]
 description = "Run 'opentofu plan' in the infrastructure directory."
-sources = [
-    "infrastructure/providers.tf",
-    "infrastructure/**/*.tfvars",
-    "infrastructure/.secrets/**",
-]
-depends = ["infra:provide_backend"]
+sources = ["infrastructure/**/*.tfvars"]
+depends = ["infra:init", "infra:provide_backend", "infra:sync_vars"]
 run = "tofu -chdir=infrastructure plan"
+
+[tasks."infra:outputs"]
+description = "Export Terraform/OpenTofu outputs to a JSON file."
+depends = ["infra:init"]
+usage = '''
+flag "--file <file>" help="Path to write the JSON outputs" default="infrastructure/terraform-outputs.json"
+'''
+run = '''
+set -euo pipefail
+
+OUTPUT_PATH="${usage_file?}"
+
+echo "Exporting OpenTofu outputs to ${OUTPUT_PATH}..."
+mkdir -p "$(dirname "${OUTPUT_PATH}")"
+tofu -chdir=infrastructure output -json > "${OUTPUT_PATH}"
+echo "Terraform outputs written to ${OUTPUT_PATH}."
+'''
 
 [tasks.sync_env]
 description = "Create missing .env from .env.example; append new variables as commented placeholders and warn the user to set them."
@@ -80,7 +94,7 @@ run = 'scripts/sync_env'
 
 [tasks."infra:provide_backend"]
 description = "Provision the backend infrastructure required for OpenTofu state storage."
-depends = ["infra:sync_vars", "gcloud:provide_state_bucket"]
+depends = ["gcloud:provide_state_bucket"]
 run = '''
 set -euo pipefail
 
@@ -137,12 +151,35 @@ else
 fi
 '''
 
+[tasks."gcloud:create_sa_key"]
+description = "Generate .secrets/sa_key.json for a given service account email."
+depends = "gcloud:auth"
+usage = '''
+flag "--email <email>" help="Service account email used to create the key" default="aa" env="GCLOUD_SA_EMAIL"
+flag "--output <output>" help="Destination path for the JSON key" default=".secrets/sa_key.json"
+flag "--dry-run" help="Preview the gcloud command without creating the key"
+'''
+run = '''
+set -euo pipefail
 
-[tasks.test1]
-description = "A test task."
-run = "echo 'This is a test task.' && exit 1"
+EMAIL="${usage_email:?Service account email is required}"
+OUTPUT_PATH="${usage_output?}"
+DRY_RUN="${usage_dry_run:-false}"
 
-[tasks.test2]
-description = "Another test task."
-depends = "test1"
-run = "echo 'This is another test task that depends on test1.'"
+mkdir -p "$(dirname "${OUTPUT_PATH}")"
+
+if [ "${DRY_RUN}" = "true" ]; then
+    echo "DRY RUN: would run 'gcloud iam service-accounts keys create ${OUTPUT_PATH} --iam-account ${EMAIL}'"
+    exit 0
+fi
+
+if [ -f "${OUTPUT_PATH}" ]; then
+    BACKUP_PATH="${OUTPUT_PATH}.$(date +%Y%m%d%H%M%S).bak"
+    echo "Existing key found at ${OUTPUT_PATH}. Backing up to ${BACKUP_PATH} before creating a new one..."
+    mv "${OUTPUT_PATH}" "${BACKUP_PATH}"
+fi
+
+gcloud iam service-accounts keys create "${OUTPUT_PATH}" --iam-account "${EMAIL}"
+chmod 600 "${OUTPUT_PATH}"
+echo "Service account key written to ${OUTPUT_PATH}."
+'''
