@@ -1,7 +1,4 @@
 models:
-  # =============================================================================
-  # stg_users : Utilisateurs nettoyés
-  # =============================================================================
   - name: stg_users
     description: |
       Utilisateurs du service VoD BigMedia nettoyés (couche staging).
@@ -28,12 +25,13 @@ models:
           - accepted_values:
               values: ['FR', 'BE', 'CH', 'LU']
               
-      - name: age_group
-        description: "Tranche d'âge déclarative de l'utilisateur (parent)"
+      - name: age
+        description: "Âge de l'utilisateur"
         tests:
           - not_null
-          - accepted_values:
-              values: ['18-24', '25-34', '35-44', '45-54']
+          - dbt_utils.accepted_range:
+              min_value: 13
+              max_value: 70
               
       - name: subscription_type
         description: "Type d'abonnement (toujours Gratuit pour BigMedia)"

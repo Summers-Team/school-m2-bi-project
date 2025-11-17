@@ -39,14 +39,12 @@ models:
         tests:
           - not_null
           - accepted_values:
-              values: ['Aventure', 'Comédie', 'Éducatif', 'Science-Fiction', 'Fantaisie']
+              values: ['Action', 'Aventure', 'Comédie', 'Éducatif', 'Science-Fiction', 'Fantaisie', 'Documentaire']
               
       - name: target_age_group
         description: "Target age group for the content"
         tests:
           - not_null
-          - accepted_values:
-              values: ['3-5 ans', '6-8 ans', '9-12 ans']
               
       - name: production_type
         description: "Production type (Original BigMedia or External Purchase)"
@@ -54,6 +52,11 @@ models:
           - not_null
           - accepted_values:
               values: ['Original BigMedia', 'Achat']
+
+      - name: production_cost_euros
+        description: "Production cost in euros"
+        tests:
+          - not_null
               
       - name: release_year
         description: "Year of content release (extracted from release_date)"

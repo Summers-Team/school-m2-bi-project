@@ -5,79 +5,126 @@ import json
 import uuid
 from datetime import datetime, timedelta
 import os
+import utility_functions
 
 # Initialisation de Faker pour générer des données en français
 fake = Faker('fr_FR')
 
 # --- CONFIGURATION ---
 # Définissez ici le nombre d'enregistrements à générer pour chaque fichier
-NUM_CONTENTS = 50
+NUM_SERIES = 10  # Nombre de séries différentes
+NUM_CONTENTS = 50  # Nombre total d'épisodes
 NUM_USERS = 500
 NUM_VIEWING_LOGS = 10000
 NUM_SOCIAL_MENTIONS = 2000
-OUTPUT_DIR = "raw_data" # Dossier où les fichiers seront sauvegardés
+OUTPUT_DIR = "raw_data"  # Dossier où les fichiers seront sauvegardés
+STATIC_DATA_PATH = os.path.join(OUTPUT_DIR, "static_data", "movies_and_series_titles.csv")
 
 # Listes de valeurs prédéfinies pour la cohérence des données
-GENRES = ["Aventure", "Comédie", "Éducatif", "Science-Fiction", "Fantaisie"]
-AGE_GROUPS_CONTENT = ["3-5 ans", "6-8 ans", "9-12 ans"]
-AGE_GROUPS_USERS = ["18-24", "25-34", "35-44", "45-54"]
+GENRES = ["Action", "Aventure", "Comédie", "Éducatif", "Science-Fiction", "Fantaisie", "Documentaire"]
+AGE_GROUPS_CONTENT = ["3-5 ans", "6-8 ans", "9-12 ans", "13-17 ans", "18-24 ans", "25-34 ans", "35-44 ans", "45-54 ans"]
 PRODUCTION_TYPES = ["Original BigMedia", "Achat"]
-DEVICE_TYPES = ["Télévision connectée", "PC", "Smartphone", "Tablette", "Console de jeux"]
-OS_LIST = ["Android TV", "iOS", "Windows", "Playstation OS", "Tizen", "WebOS"]
 PLATFORMS = ["Twitter", "Facebook", "TikTok", "Instagram"]
 
-# --- FONCTIONS DE GÉNÉRATION DE DONNÉES ---
 
 def generate_contents(n: int) -> tuple[pd.DataFrame, dict, list]:
     """
-    Génère un catalogue de contenus fictifs.
+    Génère un catalogue de contenus fictifs avec cohérence des attributs par série.
 
     Args:
-        n (int): Le nombre de contenus à générer.
+        n (int): Le nombre de contenus (épisodes) à générer.
 
     Returns:
         tuple: Un DataFrame pandas des contenus, un dictionnaire {content_id: duration},
                et une liste des titres de contenu.
     """
-    print(f"Génération de {n} contenus...")
-    contents_data = []
-    series_names = [f"Les Chroniques de {fake.word().capitalize()}" for _ in range(n // 5)]
-
-    for i in range(n):
-        series = random.choice(series_names)
-        season = random.randint(1, 3)
-        episode = random.randint(1, 10)
-        duration = random.randint(15, 45)
+    print(f"Génération de {n} contenus répartis sur {NUM_SERIES} séries...")
+    
+    # Étape 1 : Charger les noms de séries depuis le fichier CSV statique
+    series_names = utility_functions.load_series_names_from_csv(STATIC_DATA_PATH, NUM_SERIES)
+    
+    # Si le chargement échoue ou donne trop peu de séries, créer des noms génériques
+    if len(series_names) < NUM_SERIES:
+        print(f"Seulement {len(series_names)} séries chargées depuis le CSV, génération de noms supplémentaires...")
+        additional_names = [f"Les Chroniques de {fake.word().capitalize()}" for _ in range(NUM_SERIES - len(series_names))]
+        series_names.extend(additional_names)
+    
+    # Étape 2 : Créer les "séries mères" avec leurs attributs fixes
+    series_metadata = {}
+    for series_name in series_names:
         production_type = random.choice(PRODUCTION_TYPES)
-        
-        # Générer des coûts réalistes : Originaux plus chers que les Achats
-        if production_type == "Original BigMedia":
-            # Coûts pour originaux : entre 50000 et 200000 euros
-            production_cost = random.randint(50000, 200000)
-        else:
-            # Coûts pour achats : entre 10000 et 50000 euros
-            production_cost = random.randint(10000, 50000)
-        
-        contents_data.append({
-            "content_id": f"{series.lower().replace(' ', '_')}_s{season:02d}e{episode:02d}_{i}",
-            "title": f"{series} - S{season:02d}E{episode:02d}",
-            "series_name": series,
-            "season_number": season,
-            "episode_number": episode,
+        series_metadata[series_name] = {
             "genre": random.choice(GENRES),
             "target_age_group": random.choice(AGE_GROUPS_CONTENT),
             "production_type": production_type,
-            "release_date": fake.date_between(start_date='-2y', end_date='today'),
-            "duration_minutes": duration,
-            "production_cost_euros": production_cost
-        })
+            # Plage de coût cohérente pour toute la série
+            "cost_min": 50000 if production_type == "Original BigMedia" else 10000,
+            "cost_max": 200000 if production_type == "Original BigMedia" else 50000,
+            # Date de sortie de la série (première saison)
+            "series_start_date": fake.date_between(start_date='-2y', end_date='-6m')
+        }
+    
+    # Étape 3 : Générer les épisodes en respectant les attributs de chaque série
+    contents_data = []
+    episodes_per_series = n // NUM_SERIES
+    remainder = n % NUM_SERIES
+    
+    episode_counter = 0
+    for idx, series_name in enumerate(series_names):
+        metadata = series_metadata[series_name]
+        
+        # Certaines séries auront un épisode de plus pour atteindre exactement n épisodes
+        num_episodes = episodes_per_series + (1 if idx < remainder else 0)
+        
+        # Répartir les épisodes sur plusieurs saisons
+        num_seasons = random.randint(1, 3)
+        episodes_per_season = num_episodes // num_seasons
+        
+        for season in range(1, num_seasons + 1):
+            # Nombre d'épisodes dans cette saison
+            season_episodes = episodes_per_season
+            if season == num_seasons:
+                # La dernière saison prend les épisodes restants
+                season_episodes = num_episodes - (episodes_per_season * (num_seasons - 1))
+            
+            for episode in range(1, season_episodes + 1):
+                # Durée variable par épisode (15-45 minutes)
+                duration = random.randint(15, 45)
+                
+                # Coût de production variable par épisode, mais dans la plage de la série
+                production_cost = random.randint(metadata["cost_min"], metadata["cost_max"])
+                
+                # Date de sortie : progressive pour chaque saison
+                release_date = metadata["series_start_date"] + timedelta(days=(season - 1) * 180 + episode * 7)
+                
+                # Identifiant unique et normalisé
+                content_id = f"{series_name.lower().replace(' ', '_').replace(',', '').replace(':', '')}_s{season:02d}e{episode:02d}"
+                
+                contents_data.append({
+                    "content_id": content_id,
+                    "title": f"{series_name} - S{season:02d}E{episode:02d}",
+                    "series_name": series_name,
+                    "season_number": season,
+                    "episode_number": episode,
+                    "genre": metadata["genre"],
+                    "target_age_group": metadata["target_age_group"],
+                    "production_type": metadata["production_type"],
+                    "release_date": release_date,
+                    "duration_minutes": duration,
+                    "production_cost_euros": production_cost
+                })
+                
+                episode_counter += 1
     
     df = pd.DataFrame(contents_data)
+    
     # Pour la cohérence, on s'assure que les content_id sont uniques
     df = df.drop_duplicates(subset=['content_id'])
     
     content_durations = pd.Series(df.duration_minutes.values, index=df.content_id).to_dict()
     content_titles = df['title'].tolist()
+    
+    print(f"  → {len(df)} épisodes générés sur {NUM_SERIES} séries")
     
     return df, content_durations, content_titles
 
@@ -93,23 +140,30 @@ def generate_users(n: int) -> tuple[pd.DataFrame, list]:
         tuple: Un DataFrame pandas des utilisateurs et une liste de leurs IDs.
     """
     print(f"Génération de {n} utilisateurs...")
+    
     users_data = []
     for _ in range(n):
+        age = utility_functions.generate_age()
+        country = utility_functions.generate_country()
+        
         users_data.append({
             "user_id": str(uuid.uuid4()),
             "registration_date": fake.date_between(start_date='-3y', end_date='today'),
-            "country": random.choice(["FR", "BE", "CH", "LU"]),
-            "age_group": random.choice(AGE_GROUPS_USERS),
+            "country": country,
+            "age": age,
             "subscription_type": "Gratuit"
         })
     df = pd.DataFrame(users_data)
     user_ids = df['user_id'].tolist()
+    
+    print(f"  → {len(df)} utilisateurs générés")
+    
     return df, user_ids
 
 
 def generate_viewing_logs(n: int, user_ids: list, content_durations: dict) -> list[dict]:
     """
-    Génère des logs de visionnage en se basant sur les utilisateurs et contenus existants.
+    Génère des logs de visionnage avec des combinaisons cohérentes device_type/OS.
 
     Args:
         n (int): Le nombre de logs à générer.
@@ -123,6 +177,9 @@ def generate_viewing_logs(n: int, user_ids: list, content_durations: dict) -> li
     logs_data = []
     content_ids = list(content_durations.keys())
     
+    # Récupérer les combinaisons valides de device_type et OS
+    device_os_combinations = utility_functions.get_valid_device_os_combinations()
+    
     # Plage temporelle : le mois dernier
     end_date = datetime.now()
     start_date = end_date - timedelta(days=30)
@@ -130,10 +187,13 @@ def generate_viewing_logs(n: int, user_ids: list, content_durations: dict) -> li
     for _ in range(n):
         content_id = random.choice(content_ids)
         total_duration_sec = content_durations[content_id] * 60
-        watch_duration_sec = random.randint(30, total_duration_sec) # Au moins 30s de visionnage
+        watch_duration_sec = random.randint(30, total_duration_sec)  # Au moins 30s de visionnage
         
         start_time = fake.date_time_between(start_date=start_date, end_date=end_date)
         end_time = start_time + timedelta(seconds=watch_duration_sec)
+        
+        # Choisir une combinaison cohérente device/OS
+        device_os = random.choice(device_os_combinations)
         
         logs_data.append({
             "session_id": str(uuid.uuid4()),
@@ -142,9 +202,12 @@ def generate_viewing_logs(n: int, user_ids: list, content_durations: dict) -> li
             "start_timestamp": start_time.isoformat(),
             "end_timestamp": end_time.isoformat(),
             "watch_duration_seconds": watch_duration_sec,
-            "device_type": random.choice(DEVICE_TYPES),
-            "os": random.choice(OS_LIST)
+            "device_type": device_os["device_type"],
+            "os": device_os["os"]
         })
+    
+    print(f"  → {len(logs_data)} logs de visionnage générés")
+    
     return logs_data
 
 
@@ -187,6 +250,9 @@ def generate_social_media_mentions(n: int, content_titles: list) -> list[dict]:
             "shares_count": random.randint(0, 100),
             "publication_timestamp": fake.date_time_between(start_date=start_date, end_date=end_date).isoformat()
         })
+    
+    print(f"  → {len(mentions_data)} mentions générées")
+    
     return mentions_data
 
 # --- FONCTIONS DE SAUVEGARDE ---
@@ -229,7 +295,7 @@ def main():
     save_to_json_lines(viewing_logs, os.path.join(OUTPUT_DIR, "viewing_logs.json"))
     save_to_json_lines(social_mentions, os.path.join(OUTPUT_DIR, "social_media_mentions.json"))
     
-    print("\n✅ Génération des données terminée avec succès !")
+    print("\nGénération des données terminée avec succès !")
 
 
 if __name__ == "__main__":

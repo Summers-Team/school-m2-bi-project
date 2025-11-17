@@ -23,6 +23,9 @@ models:
         
       - name: genre
         description: "Content genre"
+        tests:
+        - accepted_values:
+              values: ['Action', 'Aventure', 'Comédie', 'Éducatif', 'Science-Fiction', 'Fantaisie', 'Documentaire']
         
       - name: production_type
         description: "Production type"

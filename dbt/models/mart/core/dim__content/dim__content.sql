@@ -16,7 +16,8 @@ dim_content AS (
         genre,
         target_age_group,
         production_type,
-        EXTRACT(YEAR FROM release_date) AS release_year
+        EXTRACT(YEAR FROM release_date) AS release_year,
+        production_cost_euros
     FROM base_contents
 )
 

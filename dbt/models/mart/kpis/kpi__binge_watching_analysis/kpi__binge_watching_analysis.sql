@@ -21,6 +21,7 @@ user_viewing_sessions AS (
         fv.date_fk,
         dd.full_date,
         dc.series_name,
+        dc.content_id,
         COUNT(DISTINCT fv.content_fk) AS episodes_watched
     FROM fct_viewings fv
     INNER JOIN dim_content dc
@@ -38,19 +39,18 @@ binge_watchers AS (
     SELECT
         series_name,
         COUNT(DISTINCT CASE WHEN episodes_watched >= 3 THEN user_fk END) AS binge_watchers_count,
-        COUNT(DISTINCT user_fk) AS total_viewers,
-        CAST(COUNT(DISTINCT CASE WHEN episodes_watched >= 3 THEN user_fk END) AS FLOAT64) / 
-            COUNT(DISTINCT user_fk) AS binge_watching_rate
+        COUNT(DISTINCT user_fk) AS total_viewers
     FROM user_viewing_sessions
     GROUP BY series_name
 )
 
 SELECT
+    content_id,
     series_name,
     binge_watchers_count,
     total_viewers,
-    binge_watching_rate
+
 FROM binge_watchers
 WHERE total_viewers > 0
-ORDER BY binge_watching_rate DESC
+ORDER BY binge_watchers_count DESC
 

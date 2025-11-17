@@ -12,6 +12,10 @@ models:
       series on the same day. This retention metric helps understand viewer engagement.
       
     columns:
+
+      - name: content_id
+        description: "Unique content identifier (ex: 'fishbowl_wives_s01e02' for the series_name 'Fishbowl Wives')"
+
       - name: series_name
         description: "Series name"
         
@@ -21,6 +25,5 @@ models:
       - name: total_viewers
         description: "Total number of unique viewers for the series"
         
-      - name: binge_watching_rate
-        description: "Percentage of viewers who are binge-watchers"
+
 

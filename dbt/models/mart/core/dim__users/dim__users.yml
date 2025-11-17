@@ -31,12 +31,13 @@ models:
           - accepted_values:
               values: ['FR', 'BE', 'CH', 'LU']
               
-      - name: age_group
-        description: "Declared age group of the user (parent)"
+      - name: age
+        description: "User age"
         tests:
           - not_null
-          - accepted_values:
-              values: ['18-24', '25-34', '35-44', '45-54']
+          - dbt_utils.accepted_range:
+              min_value: 13
+              max_value: 70
               
       - name: days_since_registration
         description: "Number of days since user registration (calculated at load time)"

@@ -53,7 +53,7 @@ enriched AS (
         
         -- User attributes (for dimension join)
         u.country AS user_country,
-        u.age_group AS user_age_group,
+        u.age AS user_age,
         u.registration_date,
         
         -- Content attributes (for dimension join)

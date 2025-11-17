@@ -17,6 +17,9 @@ models:
         
       - name: genre
         description: "Content genre"
+        tests:
+        - accepted_values:
+              values: ['Action', 'Aventure', 'Comédie', 'Éducatif', 'Science-Fiction', 'Fantaisie', 'Documentaire']
         
       - name: total_views
         description: "Total number of views"

@@ -15,7 +15,7 @@ cleaned AS (
         -- User attributes
         registration_date,
         UPPER(TRIM(country)) AS country,  -- Normalize to uppercase (FR, BE, CH)
-        TRIM(age_group) AS age_group,
+        CAST(age AS INT64) AS age,
         TRIM(subscription_type) AS subscription_type,
         
         -- Loading metadata
@@ -26,6 +26,7 @@ cleaned AS (
         -- Validation: filter invalid users
         user_id IS NOT NULL
         AND registration_date IS NOT NULL
+        AND age IS NOT NULL
 ),
 
 -- Deduplication: keep only one occurrence per user_id

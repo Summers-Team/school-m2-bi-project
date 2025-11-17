@@ -32,15 +32,15 @@ models:
         description: "User country code (ISO 3166-1 alpha-2)"
         tests:
           - not_null
-          - accepted_values:
-              values: ['FR', 'BE', 'CH', 'LU']
               
-      - name: age_group
-        description: "Declared age group of the user (parent)"
+      - name: age
+        description: "User age"
         tests:
           - not_null
-          - accepted_values:
-              values: ['18-24', '25-34', '35-44', '45-54']
+          - dbt_utils.accepted_range:
+              min_value: 13
+              max_value: 70
+              
               
       - name: subscription_type
         description: "Subscription type (always Free for BigMedia)"

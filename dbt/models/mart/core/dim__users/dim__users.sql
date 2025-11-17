@@ -12,7 +12,7 @@ dim_users AS (
         {{ dbt_utils.generate_surrogate_key(['user_id']) }} AS user_sk,
         user_id,
         country,
-        age_group,
+        age,
         DATE_DIFF(CURRENT_DATE(), registration_date, DAY) AS days_since_registration
     FROM base_users
 )

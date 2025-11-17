@@ -43,14 +43,14 @@ models:
         tests:
           - not_null
           - accepted_values:
-              values: ['Aventure', 'Comédie', 'Éducatif', 'Science-Fiction', 'Fantaisie']
+              values: ['Action', 'Aventure', 'Comédie', 'Éducatif', 'Science-Fiction', 'Fantaisie', 'Documentaire']
               
       - name: target_age_group
         description: "Tranche d'âge cible du contenu"
         tests:
           - not_null
           - accepted_values:
-              values: ['3-5 ans', '6-8 ans', '9-12 ans']
+              values: ['3-5 ans', '6-8 ans', '9-12 ans', '13-17 ans', '18-24 ans', '25-34 ans', '35-44 ans', '45-54 ans']
               
       - name: production_type
         description: "Type de production (Original BigMedia ou Achat externe)"
