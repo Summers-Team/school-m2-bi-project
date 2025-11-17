@@ -1,12 +1,3 @@
-# GCP project ID - replace with your actual project ID
-project_id = "your-project-id"
-
-# GCS bucket for Terraform state - must be globally unique
-state_bucket = "your-unique-bucket-name"
-
-# GCP region for resources
-region = "europe-west9"
-
 # BigQuery dataset IDs - customize as needed
 bq_dev_dataset_id  = "your-dev-dataset"
 bq_prod_dataset_id = "your-prod-dataset"

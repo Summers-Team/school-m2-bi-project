@@ -9,10 +9,6 @@ variable "region" {
   default     = "europe-west9"
 }
 
-variable "state_bucket" {
-  description = "GCS bucket for Terraform state (must exist prior to remote backend init)"
-  type        = string
-}
 
 
 variable "bq_dev_dataset_id" {

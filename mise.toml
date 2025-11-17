@@ -5,6 +5,10 @@ uv = 'latest'
 
 [env]
 '_'.file = { path = ".env" }
+TF_LOG = { value = "DEBUG" }
+
+TF_VAR_region = { value = "{{env.GCLOUD_REGION}}" }
+TF_VAR_project_id = { value = "{{env.GCLOUD_PROJECT}}" }
 
 [settings]
 python.uv_venv_auto = true
@@ -32,12 +36,30 @@ run = 'infrastructure/scripts/sync_vars'
 description = "Run 'opentofu init' in the infrastructure directory."
 sources = ["infrastructure/providers.tf", ".env", "infrastructure/.secrets/**"]
 depends = ["infra:sync_vars", "infra:provide_backend"]
-run = "tofu -chdir=infrastructure init"
+usage = '''
+flag "--enabled-gcp-backend-config" help="Enable GCP backend configuration during init" negate="--disable-gcp-backend-config" default=#true
+flag "--prefix <prefix>" help="Prefix for the Terraform state in the GCS bucket" default="terraform/state"
+'''
+env = { TERRAFORM_STATE_BUCKET = { required = true }, GCLOUD_PROJECT = { required = true } }
+run = '''
+set -euo pipefail
 
-    
+if [ "${usage_enabled_gcp_backend_config?}" = "true" ]; then
+    echo "Running 'opentofu init' with GCP backend configuration..."
+    tofu -chdir=infrastructure init -backend-config="bucket=${TERRAFORM_STATE_BUCKET}" -backend-config="prefix=${usage_prefix?}"
+else
+    echo "Running 'opentofu init' without GCP backend configuration..."
+    tofu -chdir=infrastructure init
+fi
+'''
+
 [tasks."infra:plan"]
 description = "Run 'opentofu plan' in the infrastructure directory."
-sources = ["infrastructure/providers.tf", "infrastructure/**/*.tfvars", "infrastructure/.secrets/**"]
+sources = [
+    "infrastructure/providers.tf",
+    "infrastructure/**/*.tfvars",
+    "infrastructure/.secrets/**",
+]
 depends = ["infra:provide_backend"]
 run = "tofu -chdir=infrastructure plan"
 
@@ -67,7 +89,7 @@ echo "Backend prerequisites satisfied."
 
 [tasks."gcloud:auth"]
 description = "Authenticate gcloud and ensure both CLI and application-default credentials are ready."
-env = { GCLOUD_PROJECT = {required = true} }
+env = { GCLOUD_PROJECT = { required = true } }
 run = '''
 set -euo pipefail
 
@@ -95,7 +117,7 @@ fi
 [tasks."gcloud:provide_state_bucket"]
 description = "Create the GCS bucket for Terraform state if it does not exist."
 depends = "gcloud:auth"
-env = { GCLOUD_PROJECT = {required = true}, TERRAFORM_STATE_BUCKET = {required = true} }
+env = { GCLOUD_PROJECT = { required = true }, TERRAFORM_STATE_BUCKET = { required = true } }
 run = '''
 set -euo pipefail
 

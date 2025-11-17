@@ -1,19 +1,3 @@
-
-
-resource "google_storage_bucket" "terraform_state" {
-  name          = var.state_bucket
-  location      = var.region
-  force_destroy = true
-
-  versioning {
-    enabled = true
-  }
-
-  lifecycle {
-    prevent_destroy = true
-  }
-}
-
 # Dev dataset
 resource "google_bigquery_dataset" "dev_dataset" {
   dataset_id                  = var.bq_dev_dataset_id
