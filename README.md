@@ -2,6 +2,18 @@
 
 This is a project for M2 BI, featuring infrastructure as code using Terraform/OpenTofu for GCP resources and dbt for data transformation.
 
+## Documentation
+
+📚 **[View dbt Documentation](https://summers-team.github.io/school-m2-bi-project/)** - Automatically generated and deployed on every push to main.
+
+The dbt documentation provides comprehensive information about:
+- Data models and their relationships
+- Data lineage and flow
+- Column-level descriptions
+- Test coverage and data quality checks
+
+For instructions on previewing documentation locally, see [`dbt/README.md`](dbt/README.md).
+
 ## Infrastructure deployment
 
 Detailed prerequisites and step-by-step deployment instructions now live in [`infrastructure/README.md`](infrastructure/README.md).
