@@ -183,3 +183,46 @@ gcloud iam service-accounts keys create "${OUTPUT_PATH}" --iam-account "${EMAIL}
 chmod 600 "${OUTPUT_PATH}"
 echo "Service account key written to ${OUTPUT_PATH}."
 '''
+
+[tasks."dbt:docs:generate"]
+description = "Generate dbt documentation (no database connection required)"
+run = '''
+set -euo pipefail
+
+cd dbt
+
+# Create minimal profiles.yml if it doesn't exist
+if [ ! -f profiles.yml ]; then
+    cat > profiles.yml << EOF
+projet_m2_bi:
+  outputs:
+    docs:
+      type: bigquery
+      method: oauth
+      project: dummy-project
+      dataset: dummy_dataset
+      threads: 1
+      location: US
+  target: docs
+EOF
+    echo "Created minimal profiles.yml for docs generation"
+fi
+
+echo "Parsing dbt project..."
+uv run --project .. dbt parse --profiles-dir .
+
+echo "Generating dbt documentation..."
+uv run --project .. dbt docs generate --profiles-dir . --empty-catalog --no-compile
+
+echo "Documentation generated successfully in dbt/target/"
+'''
+
+[tasks."dbt:docs:serve"]
+description = "Serve dbt documentation locally at http://localhost:8080"
+depends = ["dbt:docs:generate"]
+run = '''
+cd dbt
+echo "Starting dbt docs server at http://localhost:8080"
+echo "Press Ctrl+C to stop the server"
+uv run --project .. dbt docs serve --profiles-dir .
+'''
