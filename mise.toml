@@ -3,8 +3,124 @@ gcloud = "latest"
 opentofu = "latest"
 uv = 'latest'
 
+[env]
+'_'.file = { path = ".env" }
+
 [settings]
 python.uv_venv_auto = true
 
 [tasks.lock_requirements]
+description = "Lock Python dependencies into requirements.txt using pip-compile."
 run = "uv pip compile pyproject.toml -o requirements.txt"
+
+[tasks."infra:sync_vars"]
+description = "Create missing .tfvars from .tfvars.example; append new variables as commented placeholders and warn the user to set them."
+sources = ["infrastructure/*.tfvars.example"]
+outputs = ["infrastructure/*.tfvars"]
+usage = '''
+flag "--dir <dir>" help="Directory containing tfvars example pairs" default="infrastructure"
+flag "--pattern <pattern>" help="Glob (relative to --dir) used to locate *.tfvars.example files" default="*.tfvars.example"
+flag "--dry-run" help="Preview changes without writing files"
+flag "--log-level <level>" help="Logging level (debug, info, warning, error, critical)" default="info" {
+    choices "debug" "info" "warning" "error" "critical"
+}
+flag "--fail-on-missing" help="Exit with non-zero status when new placeholder vars are added" negate="--no-fail-on-missing" default=#true
+'''
+run = 'infrastructure/scripts/sync_vars'
+
+[tasks."infra:init"]
+description = "Run 'opentofu init' in the infrastructure directory."
+sources = ["infrastructure/providers.tf", ".env", "infrastructure/.secrets/**"]
+depends = ["infra:sync_vars", "infra:provide_backend"]
+run = "tofu -chdir=infrastructure init"
+
+    
+[tasks."infra:plan"]
+description = "Run 'opentofu plan' in the infrastructure directory."
+sources = ["infrastructure/providers.tf", "infrastructure/**/*.tfvars", "infrastructure/.secrets/**"]
+depends = ["infra:provide_backend"]
+run = "tofu -chdir=infrastructure plan"
+
+[tasks.sync_env]
+description = "Create missing .env from .env.example; append new variables as commented placeholders and warn the user to set them."
+sources = [".env.example"]
+outputs = [".env"]
+usage = '''
+flag "--example <example>" help="Path to the .env.example file" default=".env.example"
+flag "--target <target>" help="Path to the target .env file" default=".env"
+flag "--dry-run" help="Preview changes without writing files"
+flag "--log-level <level>" help="Logging level (debug, info, warning, error, critical)" default="info" {
+    choices "debug" "info" "warning" "error" "critical"
+}
+flag "--fail-on-missing" help="Exit with non-zero status when new placeholder vars are added" negate="--no-fail-on-missing" default=#true
+'''
+run = 'scripts/sync_env'
+
+[tasks."infra:provide_backend"]
+description = "Provision the backend infrastructure required for OpenTofu state storage."
+depends = ["infra:sync_vars", "gcloud:provide_state_bucket"]
+run = '''
+set -euo pipefail
+
+echo "Backend prerequisites satisfied."
+'''
+
+[tasks."gcloud:auth"]
+description = "Authenticate gcloud and ensure both CLI and application-default credentials are ready."
+env = { GCLOUD_PROJECT = {required = true} }
+run = '''
+set -euo pipefail
+
+PROJECT_ID="${GCLOUD_PROJECT}"
+
+if gcloud auth print-access-token > /dev/null 2>&1; then
+    ACTIVE_ACCOUNT=$(gcloud config get-value account 2>/dev/null || true)
+    echo "gcloud CLI already authenticated as ${ACTIVE_ACCOUNT}."
+else
+    echo "Launching gcloud login flow..."
+    gcloud auth login
+fi
+
+echo "Setting active project to ${PROJECT_ID}..."
+gcloud config set project "${PROJECT_ID}"
+
+if gcloud auth application-default print-access-token > /dev/null 2>&1; then
+    echo "Application-default credentials already configured."
+else
+    echo "Configuring application-default credentials..."
+    gcloud auth application-default login
+fi
+'''
+
+[tasks."gcloud:provide_state_bucket"]
+description = "Create the GCS bucket for Terraform state if it does not exist."
+depends = "gcloud:auth"
+env = { GCLOUD_PROJECT = {required = true}, TERRAFORM_STATE_BUCKET = {required = true} }
+run = '''
+set -euo pipefail
+
+PROJECT_ID="${GCLOUD_PROJECT}"
+BUCKET_NAME="${TERRAFORM_STATE_BUCKET}"
+LOCATION="${TERRAFORM_STATE_BUCKET_LOCATION:-}"
+
+if gcloud storage buckets describe "gs://${BUCKET_NAME}" --project="${PROJECT_ID}" > /dev/null 2>&1; then
+    echo "Bucket ${BUCKET_NAME} already exists in project ${PROJECT_ID}."
+else
+    LOCATION_FLAG=""
+    if [ -n "${LOCATION}" ]; then
+        LOCATION_FLAG="--location=${LOCATION}"
+    fi
+    echo "Creating bucket ${BUCKET_NAME} in project ${PROJECT_ID} ${LOCATION:+(location ${LOCATION})}..."
+    gcloud storage buckets create "gs://${BUCKET_NAME}" ${LOCATION_FLAG} --project="${PROJECT_ID}" --uniform-bucket-level-access
+fi
+'''
+
+
+[tasks.test1]
+description = "A test task."
+run = "echo 'This is a test task.' && exit 1"
+
+[tasks.test2]
+description = "Another test task."
+depends = "test1"
+run = "echo 'This is another test task that depends on test1.'"

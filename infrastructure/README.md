@@ -12,6 +12,17 @@ This document explains how to provision the Google Cloud resources and supportin
 
 ## Deployment Steps
 
+### Quick bootstrap with `mise`
+
+Most of the repetitive setup can be automated through the tasks declared in `mise.toml`:
+
+1. **Sync local env vars:** `mise run sync_env` copies `.env.example` to `.env` and highlights new placeholders.
+2. **Authenticate gcloud:** `mise run gcloud:auth` ensures the CLI is logged in, sets the active project from `.env`, and prepares application-default credentials for OpenTofu.
+3. **Provision the Terraform state bucket:** `mise run gcloud:provide_state_bucket` idempotently creates `gs://${TERRAFORM_STATE_BUCKET}` (using the optional `TERRAFORM_STATE_BUCKET_LOCATION`) via `gcloud storage buckets create`, exactly as documented in the [Cloud Storage quickstart](https://cloud.google.com/storage/docs/discover-object-storage-gcloud#local-shell).
+4. **Prepare backend prerequisites:** `mise run infra:provide_backend` depends on the previous steps, so running `mise run infra:init` or `mise run infra:plan` will automatically ensure the remote state bucket exists before touching OpenTofu.
+
+You can still perform the steps manually if you prefer; the remainder of this guide documents the underlying workflow.
+
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
@@ -23,6 +34,7 @@ This document explains how to provision the Google Cloud resources and supportin
    cp infrastructure/terraform.tfvars.example infrastructure/terraform.tfvars
    ```
    Edit `infrastructure/terraform.tfvars` to set your project ID, state bucket name, dataset IDs, and service account settings.
+   You can keep `.env` in sync with `mise run sync_env`, which ensures tasks such as `gcloud:auth` and `gcloud:provide_state_bucket` read the latest identifiers.
 
 3. **Initialize and apply the infrastructure**
    ```bash
@@ -32,6 +44,7 @@ This document explains how to provision the Google Cloud resources and supportin
    tofu apply
    ```
    Replace `<your-state-bucket>` with the value configured in `terraform.tfvars`. The backend block already fixes the prefix to `terraform/state`.
+   If you prefer task automation, run `mise run infra:init` (which depends on `gcloud:provide_state_bucket`) followed by `mise run infra:plan`/`infra:apply`.
 
 4. **Export Terraform outputs**
    ```bash

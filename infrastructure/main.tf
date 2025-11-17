@@ -1,21 +1,4 @@
-terraform {
-  backend "gcs" {
-    bucket = var.state_bucket
-    prefix = "terraform/state"
-  }
 
-  required_providers {
-    google = {
-      source  = "hashicorp/google"
-      version = ">= 5.0"
-    }
-  }
-}
-
-provider "google" {
-  project = var.project_id
-  region  = var.region
-}
 
 resource "google_storage_bucket" "terraform_state" {
   name          = var.state_bucket
