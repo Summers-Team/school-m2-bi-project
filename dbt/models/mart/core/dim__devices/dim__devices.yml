@@ -1,0 +1,32 @@
+version: 2
+
+models:
+  # =============================================================================
+  # dim_devices : Device dimension table for star schema
+  # =============================================================================
+  - name: dim_devices
+    description: |
+      Device dimension table containing information about viewing platforms.
+      
+      This dimension is part of the star schema and will be joined to the fact table
+      fct_viewings via the device_fk foreign key.
+      
+      Each unique combination of device_type and os represents a distinct device.
+      
+    columns:
+      - name: device_sk
+        description: "Surrogate key for device dimension (primary key)"
+        tests:
+          - unique
+          - not_null
+          
+      - name: device_type
+        description: "Type of device used for viewing"
+        tests:
+          - not_null
+          
+      - name: os
+        description: "Operating system of the device"
+        tests:
+          - not_null
+

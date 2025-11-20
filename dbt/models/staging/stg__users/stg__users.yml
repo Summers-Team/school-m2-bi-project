@@ -1,0 +1,41 @@
+models:
+  - name: stg_users
+    description: |
+      Utilisateurs du service VoD BigMedia nettoyés (couche staging).
+      
+      Cette table contient les informations anonymisées des utilisateurs inscrits.
+      Elle sert de base pour les modèles intermédiaires (int_) puis les dimensions (dim_).
+      
+    columns:
+      - name: user_id
+        description: "Identifiant unique de l'utilisateur (clé primaire)"
+        tests:
+          - unique
+          - not_null
+          
+      - name: registration_date
+        description: "Date d'inscription au service"
+        tests:
+          - not_null
+          
+      - name: country
+        description: "Code pays de l'utilisateur (ISO 3166-1 alpha-2)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['FR', 'BE', 'CH', 'LU']
+              
+      - name: age
+        description: "Âge de l'utilisateur"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 13
+              max_value: 70
+              
+      - name: subscription_type
+        description: "Type d'abonnement (toujours Gratuit pour BigMedia)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Gratuit']

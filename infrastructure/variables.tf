@@ -14,17 +14,21 @@ variable "state_bucket" {
   type        = string
 }
 
+variable "ingested_data_bucket" {
+  description = "GCS bucket name for ingested data"
+  type        = string
+}
 
 variable "bq_dev_dataset_id" {
   description = "BigQuery dataset ID for dev"
   type        = string
-  default     = "bi_dataset_dev"
+  default     = "bi_dataset_dev_id"
 }
 
 variable "bq_prod_dataset_id" {
   description = "BigQuery dataset ID for prod"
   type        = string
-  default     = "bi_dataset_prod"
+  default     = "bi_dataset_prod_id"
 }
 
 variable "sa_account_id" {

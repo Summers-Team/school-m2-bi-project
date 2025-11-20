@@ -1,0 +1,60 @@
+version: 2
+
+sources:
+  - name: raw_gcs
+    description: |
+      Données brutes depuis Google Cloud Storage via tables externes BigQuery.
+      
+      Ces tables externes pointent vers les fichiers CSV/JSON stockés dans le bucket
+      GCS d'ingestion. Elles sont créées automatiquement au démarrage du pipeline dbt
+      via la macro create_external_sources() (voir dbt/macros/sources/).
+      
+      Architecture :
+        GCS Bucket: {{ target.project }}-ingested-data
+        Prefix: raw_data/*/
+        
+      Les fichiers sont organisés par timestamp d'exécution du flow refill_bucket.
+      Le wildcard (*) permet de lire tous les runs, avec déduplication si nécessaire.
+    
+    # Ces valeurs sont dynamiques et dépendent du target (dev/prod)
+    # Elles sont remplies depuis profiles.yml généré par Terraform
+    database: "{{ target.project }}"  # Ex: test-terraform-473818
+    schema: "{{ target.dataset }}"    # Ex: test_terraform_473818_dev ou _prod
+  
+    
+    tables:
+      - name: raw_contents
+        description: |
+          Catalogue de contenus bruts depuis GCS (contents.csv).
+          
+          Source : gs://{{ target.project }}-ingested-data/raw_data/*/contents.csv
+          Format : CSV avec en-tête
+          Fréquence de mise à jour : Hebdomadaire (flow refill_bucket)
+        identifier: raw_contents
+        
+      - name: raw_users
+        description: |
+          Utilisateurs bruts depuis GCS (users.csv).
+          
+          Source : gs://{{ target.project }}-ingested-data/raw_data/*/users.csv
+          Format : CSV avec en-tête
+          Fréquence de mise à jour : Hebdomadaire (flow refill_bucket)
+        identifier: raw_users
+        
+      - name: raw_viewing_logs
+        description: |
+          Logs de visionnage bruts depuis GCS (viewing_logs.json).
+          
+          Source : gs://{{ target.project }}-ingested-data/raw_data/*/viewing_logs.json
+          Format : JSON Lines (newline-delimited JSON)
+          Fréquence de mise à jour : Hebdomadaire (flow refill_bucket)
+        identifier: raw_viewing_logs
+        
+      - name: raw_social_media_mentions
+        description: |
+          Mentions réseaux sociaux brutes depuis GCS (social_media_mentions.json).
+          
+          Source : gs://{{ target.project }}-ingested-data/raw_data/*/social_media_mentions.json
+          Format : JSON Lines (newline-delimited JSON)
+          Fréquence de mise à jour : Hebdomadaire (flow refill_bucket)
+        identifier: raw_social_media_mentions

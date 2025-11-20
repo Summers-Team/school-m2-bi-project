@@ -7,7 +7,7 @@ projet_m2_bi:
       project: "${project}"
       dataset: ${dev_dataset}
       keyfile: "${sa_key_path}"
-      threads: 1
+      threads: 4
       location: ${region}
 
     prod:
@@ -16,6 +16,6 @@ projet_m2_bi:
       project: "${project}"
       dataset: ${prod_dataset}
       keyfile: "${sa_key_path}"
-      threads: 4
+      threads: 8
       location: ${region}
 

@@ -1,0 +1,44 @@
+version: 2
+
+models:
+  # =============================================================================
+  # dim_users : User dimension table for star schema
+  # =============================================================================
+  - name: dim_users
+    description: |
+      User dimension table containing information about BigMedia VoD service users.
+      
+      This dimension is part of the star schema and will be joined to the fact table
+      fct_viewings via the user_fk foreign key.
+      
+    columns:
+      - name: user_sk
+        description: "Surrogate key for user dimension (primary key)"
+        tests:
+          - unique
+          - not_null
+          
+      - name: user_id
+        description: "Business key - unique user identifier"
+        tests:
+          - unique
+          - not_null
+          
+      - name: country
+        description: "User country code (ISO 3166-1 alpha-2)"
+        tests:
+          - not_null
+              
+      - name: age
+        description: "User age"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 13
+              max_value: 70
+              
+      - name: days_since_registration
+        description: "Number of days since user registration (calculated at load time)"
+        tests:
+          - not_null
+

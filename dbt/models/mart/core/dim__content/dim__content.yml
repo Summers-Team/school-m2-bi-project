@@ -1,0 +1,84 @@
+version: 2
+
+models:
+  # =============================================================================
+  # dim_content : Content dimension table for star schema
+  # =============================================================================
+  - name: dim_content
+    description: |
+      Content dimension table containing information about programs available on BigMedia.
+      
+      This dimension is part of the star schema and will be joined to the fact table
+      fct_viewings via the content_fk foreign key.
+      
+    columns:
+      - name: content_sk
+        description: "Surrogate key for content dimension (primary key)"
+        tests:
+          - unique
+          - not_null
+          
+      - name: content_id
+        description: "Business key - unique content identifier"
+        tests:
+          - unique
+          - not_null
+          
+      - name: title
+        description: "Full title of the episode or movie"
+        tests:
+          - not_null
+          
+      - name: series_name
+        description: "Parent series name"
+        tests:
+          - not_null
+          
+      - name: season_number
+        description: "Season number (1, 2, 3...)"
+        tests:
+          - not_null
+          
+      - name: episode_number
+        description: "Episode number within the season"
+        tests:
+          - not_null
+          
+      - name: genre
+        description: "Main content genre"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Action', 'Aventure', 'Comédie', 'Éducatif', 'Science-Fiction', 'Fantaisie', 'Documentaire']
+              
+      - name: target_age_group
+        description: "Target age group for the content"
+        tests:
+          - not_null
+              
+      - name: production_type
+        description: "Production type (Original BigMedia or External Purchase)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Original BigMedia', 'Achat']
+
+      - name: release_date
+        description: "First release date of the content"
+        tests:
+          - not_null
+
+      - name: release_year
+        description: "Year of content release (extracted from release_date)"
+        tests:
+          - not_null
+
+      - name: duration_minutes
+        description: "Content duration in minutes"
+        tests:
+          - not_null
+
+      - name: production_cost_euros
+        description: "Production cost in euros"
+        tests:
+          - not_null
