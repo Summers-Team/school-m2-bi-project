@@ -35,6 +35,7 @@ jobs:
           pip install -r requirements.txt
       
       - name: Authenticate to Google Cloud
+        id: auth
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.DBT_SERVICE_ACCOUNT_JSON }}
@@ -44,9 +45,30 @@ jobs:
       - name: Configure dbt profiles
         run: |
           cd dbt
-          cp profiles.tpl.yml profiles.yml
-          # Utilise le fichier de credentials créé par google-github-actions/auth
-          sed -i "s|{{ env_var(\"DBT_KEYFILE_PATH\") }}|$GOOGLE_APPLICATION_CREDENTIALS|g" profiles.yml
+          # Extract profile name from dbt_project.yml using Python (available from previous step)
+          DBT_PROFILE=$(python -c "import yaml; print(yaml.safe_load(open('dbt_project.yml'))['profile'])")
+          
+          cat > profiles.yml <<EOF
+          $DBT_PROFILE:
+            target: dev
+            outputs:
+              dev:
+                type: bigquery
+                method: service-account
+                project: ${{ secrets.GCP_PROJECT_ID }}
+                dataset: ${{ secrets.GCP_DEV_DATASET }}
+                keyfile: ${{ steps.auth.outputs.credentials_file_path }}
+                threads: 4
+                location: ${{ secrets.GCP_REGION }}
+              prod:
+                type: bigquery
+                method: service-account
+                project: ${{ secrets.GCP_PROJECT_ID }}
+                dataset: ${{ secrets.GCP_PROD_DATASET }}
+                keyfile: ${{ steps.auth.outputs.credentials_file_path }}
+                threads: 8
+                location: ${{ secrets.GCP_REGION }}
+          EOF
       
       - name: Install dbt packages
         run: |
