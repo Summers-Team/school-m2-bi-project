@@ -6,7 +6,7 @@ models:
   # =============================================================================
   - name: int_viewing_enriched
     description: |
-      Intermediate model that enriches viewing logs with user and content information.
+      Intermediate table that enriches viewing logs with user and content information.
       
       This model joins base__viewing_logs with base__users and base__contents to create
       a comprehensive dataset ready for fact table creation. It calculates key metrics

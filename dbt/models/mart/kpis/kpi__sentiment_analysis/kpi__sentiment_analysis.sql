@@ -36,7 +36,7 @@ sentiment_scoring AS (
         END AS sentiment_score
     FROM base_social_media bsm
     LEFT JOIN dim_content dc
-        ON bsm.content_title_mentioned = dc.content_id
+        ON bsm.content_id = dc.content_id
     WHERE dc.production_type = 'Original BigMedia'
       OR dc.production_type IS NULL  -- Include unmatched mentions for now
 ),

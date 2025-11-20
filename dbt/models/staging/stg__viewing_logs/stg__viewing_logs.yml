@@ -56,6 +56,3 @@ models:
         description: "Système d'exploitation de l'appareil"
         tests:
           - not_null
-          
-      - name: _loaded_at
-        description: "Timestamp de chargement dans la couche staging"

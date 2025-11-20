@@ -15,12 +15,14 @@ cleaned AS (
         -- Mentioned content (for matching with base_contents)
         TRIM(content_title_mentioned) AS content_title_mentioned,
         
+        -- Unique content identifier
         TRIM(content_id) AS content_id,
+
         -- Mention metadata
         TRIM(platform) AS platform,
         TRIM(author_id) AS author_id,
         TRIM(mention_text) AS mention_text,
-        
+
         -- Engagement metrics (basic typing only)
         CAST(likes_count AS INT64) AS likes_count,
         CAST(shares_count AS INT64) AS shares_count,

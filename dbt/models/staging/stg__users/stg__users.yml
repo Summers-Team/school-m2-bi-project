@@ -39,6 +39,3 @@ models:
           - not_null
           - accepted_values:
               values: ['Gratuit']
-              
-      - name: _loaded_at
-        description: "Timestamp de chargement dans la couche staging"
