@@ -34,20 +34,19 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
       
-      # Pour créer le fichier JSON du service account depuis le secret GitHub, 
-      # on écrit le contenu du secret dans un fichier JSON
-      - name: Create service account keyfile
-        run: |
-          echo '${{ secrets.DBT_SERVICE_ACCOUNT_JSON }}' > ${{ github.workspace }}/dbt/service-account.json
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.DBT_SERVICE_ACCOUNT_JSON }}
+          create_credentials_file: true
+          cleanup_credentials: true
       
       - name: Configure dbt profiles
         run: |
           cd dbt
           cp profiles.tpl.yml profiles.yml
-          # Remplace les variables d'environnement dans profiles.yml
-          sed -i 's|{{ env_var("DBT_KEYFILE_PATH") }}|service-account.json|g' profiles.yml
-        env:
-          DBT_KEYFILE_PATH: service-account.json
+          # Utilise le fichier de credentials créé par google-github-actions/auth
+          sed -i "s|{{ env_var(\"DBT_KEYFILE_PATH\") }}|$GOOGLE_APPLICATION_CREDENTIALS|g" profiles.yml
       
       - name: Install dbt packages
         run: |
@@ -58,8 +57,6 @@ jobs:
         run: |
           cd dbt
           dbt docs generate --profiles-dir . --target dev
-        env:
-          DBT_KEYFILE_PATH: service-account.json
       
       - name: Prepare documentation for GitHub Pages
         run: |
