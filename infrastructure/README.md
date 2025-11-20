@@ -39,7 +39,36 @@ This document explains how to provision the Google Cloud resources and supportin
    ```
    Keep this JSON file alongside the Terraform configuration (default path consumed by the profile generator).
 
-5. **Generate the dbt profiles and Prefect blocks**
+5. **Configure GitHub Secrets for dbt documentation deployment**
+   
+   To enable automatic deployment of dbt documentation to GitHub Pages, add the following secrets to your GitHub repository:
+   
+   Go to **Settings** > **Secrets and variables** > **Actions** > **New repository secret** and add:
+   
+   | Secret Name | Value | Source |
+   |-------------|-------|--------|
+   | `DBT_SERVICE_ACCOUNT_JSON` | Complete content of the service account JSON key file | See step 6 below |
+   | `GCP_PROJECT_ID` | Your GCP project ID | `jq -r '.project_id.value' terraform-outputs.json` |
+   | `GCP_DEV_DATASET` | Development dataset ID | `jq -r '.bq_dev_dataset_id.value' terraform-outputs.json` |
+   | `GCP_PROD_DATASET` | Production dataset ID | `jq -r '.bq_prod_dataset_id.value' terraform-outputs.json` |
+   | `GCP_REGION` | GCP region | `jq -r '.region.value' terraform-outputs.json` |
+   
+   Extract values easily with:
+   ```bash
+   # Display all values needed for GitHub secrets
+   cat terraform-outputs.json | jq -r '
+     "GCP_PROJECT_ID: " + .project_id.value,
+     "GCP_DEV_DATASET: " + .bq_dev_dataset_id.value,
+     "GCP_PROD_DATASET: " + .bq_prod_dataset_id.value,
+     "GCP_REGION: " + .region.value
+   '
+   ```
+   
+   The service account JSON key will be created in step 6.
+   
+   See [`.github/workflows/README.md`](../.github/workflows/README.md) for detailed documentation deployment information.
+
+6. **Generate the dbt profiles and Prefect blocks**
    
    The project includes an automated setup module that:
    - Parses the dbt profile template (`dbt/profiles.tpl.yml`)
@@ -72,11 +101,20 @@ This document explains how to provision the Google Cloud resources and supportin
      - `dbt-operation-test-{target}` - dbt test operation per target
      - `dbt-operation-debug-{target}` - dbt debug operation per target
 
-6. **Create and store the service account key (if required)**
+7. **Create and store the service account key**
    ```bash
    gcloud iam service-accounts keys create .secrets/sa_key.json --iam-account <sa-email>
    ```
    `<sa-email>` is available in the Terraform outputs. The setup module automatically uses `.secrets/sa_key.json` to create the GCP credentials block.
+   
+   After creating the key, add its content to GitHub secrets (step 5) as `DBT_SERVICE_ACCOUNT_JSON`:
+   ```bash
+   # Copy the content to clipboard (macOS)
+   cat .secrets/sa_key.json | pbcopy
+   
+   # Or display it for manual copy
+   cat .secrets/sa_key.json
+   ```
 
 ## Setup Profiles Module
 
