@@ -13,10 +13,14 @@ dim_content AS (
         content_id,
         title,
         series_name,
+        season_number,
+        episode_number,
         genre,
         target_age_group,
         production_type,
+        release_date,
         EXTRACT(YEAR FROM release_date) AS release_year,
+        duration_minutes,
         production_cost_euros
     FROM base_contents
 )

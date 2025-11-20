@@ -15,6 +15,7 @@ cleaned AS (
         -- Mentioned content (for matching with base_contents)
         TRIM(content_title_mentioned) AS content_title_mentioned,
         
+        TRIM(content_id) AS content_id,
         -- Mention metadata
         TRIM(platform) AS platform,
         TRIM(author_id) AS author_id,

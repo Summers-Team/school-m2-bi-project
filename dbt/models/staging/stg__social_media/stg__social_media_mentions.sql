@@ -6,6 +6,7 @@
 SELECT 
     mention_id,
     content_title_mentioned,
+    content_id,
     platform,
     author_id,
     mention_text,

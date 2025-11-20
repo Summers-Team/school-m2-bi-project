@@ -14,6 +14,7 @@ dim_content AS (
 sentiment_scoring AS (
     SELECT
         bsm.mention_id,
+        bsm.content_id,
         bsm.content_title_mentioned,
         bsm.mention_text,
         dc.production_type,
@@ -35,13 +36,14 @@ sentiment_scoring AS (
         END AS sentiment_score
     FROM base_social_media bsm
     LEFT JOIN dim_content dc
-        ON bsm.content_title_mentioned = dc.title
+        ON bsm.content_title_mentioned = dc.content_id
     WHERE dc.production_type = 'Original BigMedia'
       OR dc.production_type IS NULL  -- Include unmatched mentions for now
 ),
 
 sentiment_by_content AS (
     SELECT
+        sm.content_id,
         sm.content_title_mentioned,
         COUNT(*) AS total_mentions,
         AVG(sm.sentiment_score) AS avg_sentiment_score,
@@ -49,10 +51,11 @@ sentiment_by_content AS (
         SUM(CASE WHEN sm.sentiment_score < 0 THEN 1 ELSE 0 END) AS negative_mentions,
         SUM(CASE WHEN sm.sentiment_score = 0 THEN 1 ELSE 0 END) AS neutral_mentions
     FROM sentiment_scoring sm
-    GROUP BY sm.content_title_mentioned
+    GROUP BY sm.content_id, sm.content_title_mentioned
 )
 
 SELECT
+    content_id,
     content_title_mentioned,
     total_mentions,
     avg_sentiment_score,

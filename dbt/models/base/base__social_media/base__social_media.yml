@@ -28,6 +28,11 @@ models:
         description: "Title of mentioned content (for matching with base_contents.title)"
         tests:
           - not_null
+
+      - name: content_id
+        description: "Unique content identifier (for matching with base_contents.content_id)"
+        tests:
+          - not_null
           
       - name: platform
         description: "Source platform of the mention"

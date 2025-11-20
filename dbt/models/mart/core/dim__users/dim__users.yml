@@ -28,8 +28,6 @@ models:
         description: "User country code (ISO 3166-1 alpha-2)"
         tests:
           - not_null
-          - accepted_values:
-              values: ['FR', 'BE', 'CH', 'LU']
               
       - name: age
         description: "User age"

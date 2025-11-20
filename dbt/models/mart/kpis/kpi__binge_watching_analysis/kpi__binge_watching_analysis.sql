@@ -21,7 +21,6 @@ user_viewing_sessions AS (
         fv.date_fk,
         dd.full_date,
         dc.series_name,
-        dc.content_id,
         COUNT(DISTINCT fv.content_fk) AS episodes_watched
     FROM fct_viewings fv
     INNER JOIN dim_content dc
@@ -37,20 +36,30 @@ user_viewing_sessions AS (
 
 binge_watchers AS (
     SELECT
+        uvs.series_name,
+        COUNT(DISTINCT CASE WHEN uvs.episodes_watched >= 3 THEN uvs.user_fk END) AS binge_watchers_count,
+        COUNT(DISTINCT uvs.user_fk) AS total_viewers
+    FROM user_viewing_sessions uvs
+    GROUP BY uvs.series_name
+),
+
+series_content_id AS (
+    SELECT DISTINCT
         series_name,
-        COUNT(DISTINCT CASE WHEN episodes_watched >= 3 THEN user_fk END) AS binge_watchers_count,
-        COUNT(DISTINCT user_fk) AS total_viewers
-    FROM user_viewing_sessions
+        ANY_VALUE(content_id) AS content_id
+    FROM dim_content
     GROUP BY series_name
 )
 
 SELECT
-    content_id,
-    series_name,
-    binge_watchers_count,
-    total_viewers,
+    sci.content_id,
+    bw.series_name,
+    bw.binge_watchers_count,
+    bw.total_viewers
 
-FROM binge_watchers
-WHERE total_viewers > 0
-ORDER BY binge_watchers_count DESC
+FROM binge_watchers bw
+LEFT JOIN series_content_id sci
+    ON bw.series_name = sci.series_name
+WHERE bw.total_viewers > 0
+ORDER BY bw.binge_watchers_count DESC
 

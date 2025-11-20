@@ -2,9 +2,9 @@ version: 2
 
 models:
   # =============================================================================
-  # kpi_sentiment_analysis : Sentiment analysis for original productions
+  # kpi__sentiment_analysis : Sentiment analysis for original productions
   # =============================================================================
-  - name: kpi_sentiment_analysis
+  - name: kpi__sentiment_analysis
     description: |
       KPI showing sentiment analysis scores for original BigMedia productions based
       on social media mentions.
@@ -14,6 +14,11 @@ models:
       approach for testing purposes.
       
     columns:
+      - name: content_id
+        description: "Unique content identifier"
+        tests:
+          - not_null
+          
       - name: content_title_mentioned
         description: "Content title mentioned in social media"
         

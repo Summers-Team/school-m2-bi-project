@@ -34,6 +34,16 @@ models:
         tests:
           - not_null
           
+      - name: season_number
+        description: "Season number (1, 2, 3...)"
+        tests:
+          - not_null
+          
+      - name: episode_number
+        description: "Episode number within the season"
+        tests:
+          - not_null
+          
       - name: genre
         description: "Main content genre"
         tests:
@@ -53,13 +63,22 @@ models:
           - accepted_values:
               values: ['Original BigMedia', 'Achat']
 
-      - name: production_cost_euros
-        description: "Production cost in euros"
+      - name: release_date
+        description: "First release date of the content"
         tests:
           - not_null
-              
+
       - name: release_year
         description: "Year of content release (extracted from release_date)"
         tests:
           - not_null
 
+      - name: duration_minutes
+        description: "Content duration in minutes"
+        tests:
+          - not_null
+
+      - name: production_cost_euros
+        description: "Production cost in euros"
+        tests:
+          - not_null

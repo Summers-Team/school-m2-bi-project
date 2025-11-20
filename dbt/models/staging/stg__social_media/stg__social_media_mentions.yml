@@ -24,6 +24,11 @@ models:
         tests:
           - not_null
           
+      - name: content_id
+        description: "Unique content identifier"
+        tests:
+          - not_null
+          
       - name: platform
         description: "Plateforme source de la mention"
         tests:

@@ -13,10 +13,10 @@ fake = Faker('fr_FR')
 # --- CONFIGURATION ---
 # Définissez ici le nombre d'enregistrements à générer pour chaque fichier
 NUM_SERIES = 10  # Nombre de séries différentes
-NUM_CONTENTS = 50  # Nombre total d'épisodes
+NUM_CONTENTS = 45  # Nombre total d'épisodes
 NUM_USERS = 500
-NUM_VIEWING_LOGS = 10000
-NUM_SOCIAL_MENTIONS = 2000
+NUM_VIEWING_LOGS = 15000
+NUM_SOCIAL_MENTIONS = 800
 OUTPUT_DIR = "raw_data"  # Dossier où les fichiers seront sauvegardés
 STATIC_DATA_PATH = os.path.join(OUTPUT_DIR, "static_data", "movies_and_series_titles.csv")
 
@@ -124,9 +124,12 @@ def generate_contents(n: int) -> tuple[pd.DataFrame, dict, list]:
     content_durations = pd.Series(df.duration_minutes.values, index=df.content_id).to_dict()
     content_titles = df['title'].tolist()
     
+    # Créer un mapping content_id -> title pour les mentions sur les réseaux sociaux
+    content_mapping = df[['content_id', 'title']].to_dict('records')
+    
     print(f"  → {len(df)} épisodes générés sur {NUM_SERIES} séries")
     
-    return df, content_durations, content_titles
+    return df, content_durations, content_titles, content_mapping
 
 
 def generate_users(n: int) -> tuple[pd.DataFrame, list]:
@@ -163,7 +166,11 @@ def generate_users(n: int) -> tuple[pd.DataFrame, list]:
 
 def generate_viewing_logs(n: int, user_ids: list, content_durations: dict) -> list[dict]:
     """
-    Génère des logs de visionnage avec des combinaisons cohérentes device_type/OS.
+    Génère des logs de visionnage avec des comportements de binge-watching réalistes.
+    
+    Environ 40% des logs sont générés en sessions de binge-watching (3-6 épisodes
+    d'une même série regardés le même jour), le reste sont des visionnages normaux
+    aléatoires.
 
     Args:
         n (int): Le nombre de logs à générer.
@@ -173,9 +180,12 @@ def generate_viewing_logs(n: int, user_ids: list, content_durations: dict) -> li
     Returns:
         list[dict]: Une liste de dictionnaires, chaque dictionnaire étant un log.
     """
-    print(f"Génération de {n} logs de visionnage...")
+    print(f"Génération de {n} logs de visionnage avec comportements de binge-watching...")
     logs_data = []
     content_ids = list(content_durations.keys())
+    
+    # Grouper les contenus par série
+    series_episodes = utility_functions.group_content_by_series(content_durations)
     
     # Récupérer les combinaisons valides de device_type et OS
     device_os_combinations = utility_functions.get_valid_device_os_combinations()
@@ -184,10 +194,56 @@ def generate_viewing_logs(n: int, user_ids: list, content_durations: dict) -> li
     end_date = datetime.now()
     start_date = end_date - timedelta(days=30)
     
-    for _ in range(n):
+    # Configuration : environ 40% des logs en binge-watching
+    # Une session de binge = 3-6 épisodes, donc prenons une moyenne de 4
+    binge_ratio = 0.22
+    avg_episodes_per_binge = 4
+    num_binge_sessions = int((n * binge_ratio) / avg_episodes_per_binge)
+    
+    logs_generated = 0
+    
+    # 1. Générer les sessions de binge-watching
+    print(f"  → Génération de {num_binge_sessions} sessions de binge-watching...")
+    binge_sessions_created = 0
+    
+    for _ in range(num_binge_sessions):
+        if logs_generated >= n:
+            break
+        
+        # Choisir un utilisateur et une série
+        user_id = random.choice(user_ids)
+        series_name = random.choice(list(series_episodes.keys()))
+        episodes = series_episodes[series_name]
+        
+        # Générer la session de binge-watching
+        session_logs = utility_functions.generate_binge_watching_session(
+            user_id=user_id,
+            series_name=series_name,
+            episodes=episodes,
+            content_durations=content_durations,
+            start_date=start_date,
+            end_date=end_date,
+            device_os_combinations=device_os_combinations
+        )
+        
+        logs_data.extend(session_logs)
+        logs_generated += len(session_logs)
+        binge_sessions_created += 1
+    
+    print(f"     - {binge_sessions_created} sessions créées ({logs_generated} logs)")
+    
+    # 2. Compléter avec des visionnages normaux (aléatoires)
+    normal_logs_to_generate = n - logs_generated
+    print(f"  → Génération de {normal_logs_to_generate} visionnages normaux...")
+    
+    for _ in range(normal_logs_to_generate):
         content_id = random.choice(content_ids)
         total_duration_sec = content_durations[content_id] * 60
-        watch_duration_sec = random.randint(30, total_duration_sec)  # Au moins 30s de visionnage
+        
+        # Pour les visionnages normaux, taux de complétion variable (10% à 100%)
+        completion_rate = random.uniform(0.1, 1.0)
+        watch_duration_sec = int(total_duration_sec * completion_rate)
+        watch_duration_sec = max(30, watch_duration_sec)  # Au moins 30s
         
         start_time = fake.date_time_between(start_date=start_date, end_date=end_date)
         end_time = start_time + timedelta(seconds=watch_duration_sec)
@@ -197,7 +253,7 @@ def generate_viewing_logs(n: int, user_ids: list, content_durations: dict) -> li
         
         logs_data.append({
             "session_id": str(uuid.uuid4()),
-            "user_id": random.choice(user_ids),
+            "user_id": user_id,
             "content_id": content_id,
             "start_timestamp": start_time.isoformat(),
             "end_timestamp": end_time.isoformat(),
@@ -205,19 +261,22 @@ def generate_viewing_logs(n: int, user_ids: list, content_durations: dict) -> li
             "device_type": device_os["device_type"],
             "os": device_os["os"]
         })
+        logs_generated += 1
     
-    print(f"  → {len(logs_data)} logs de visionnage générés")
+    print(f"  → Total: {len(logs_data)} logs générés")
+    print(f"     • Sessions de binge-watching: ~{int((binge_sessions_created * avg_episodes_per_binge / len(logs_data)) * 100)}%")
+    print(f"     • Visionnages normaux: ~{int((normal_logs_to_generate / len(logs_data)) * 100)}%")
     
     return logs_data
 
 
-def generate_social_media_mentions(n: int, content_titles: list) -> list[dict]:
+def generate_social_media_mentions(n: int, content_mapping: list[dict]) -> list[dict]:
     """
     Génère des mentions fictives sur les réseaux sociaux.
 
     Args:
         n (int): Le nombre de mentions à générer.
-        content_titles (list): La liste des titres de contenu à mentionner.
+        content_mapping (list[dict]): Liste de dictionnaires avec 'content_id' et 'title'.
 
     Returns:
         list[dict]: Une liste de dictionnaires, chaque dictionnaire étant une mention.
@@ -239,9 +298,14 @@ def generate_social_media_mentions(n: int, content_titles: list) -> list[dict]:
     ]
     
     for _ in range(n):
-        title = random.choice(content_titles)
+        # Sélectionner un contenu aléatoire avec son content_id et son titre
+        content = random.choice(content_mapping)
+        content_id = content['content_id']
+        title = content['title']
+
         mentions_data.append({
             "mention_id": str(uuid.uuid4()),
+            "content_id": content_id,
             "content_title_mentioned": title,
             "platform": random.choice(PLATFORMS),
             "author_id": str(uuid.uuid4()),
@@ -280,13 +344,13 @@ def main():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
     # 1. Générer les données "parent" (celles dont les autres dépendent)
-    contents_df, content_durations, content_titles = generate_contents(NUM_CONTENTS)
+    contents_df, content_durations, content_titles, content_mapping = generate_contents(NUM_CONTENTS)
     users_df, user_ids = generate_users(NUM_USERS)
 
     # 2. Générer les données "enfant" en utilisant les IDs et titres des parents
     #    Ceci garantit la cohérence et l'intégrité référentielle !
     viewing_logs = generate_viewing_logs(NUM_VIEWING_LOGS, user_ids, content_durations)
-    social_mentions = generate_social_media_mentions(NUM_SOCIAL_MENTIONS, content_titles)
+    social_mentions = generate_social_media_mentions(NUM_SOCIAL_MENTIONS, content_mapping)
 
     # 3. Sauvegarder tous les fichiers
     print("\n--- Sauvegarde des fichiers ---")
