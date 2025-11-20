@@ -45,8 +45,11 @@ jobs:
       - name: Configure dbt profiles
         run: |
           cd dbt
+          # Extract profile name from dbt_project.yml using Python (available from previous step)
+          DBT_PROFILE=$(python -c "import yaml; print(yaml.safe_load(open('dbt_project.yml'))['profile'])")
+          
           cat > profiles.yml <<EOF
-          projet_m2_bi:
+          $DBT_PROFILE:
             target: dev
             outputs:
               dev:
