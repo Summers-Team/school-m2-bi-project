@@ -25,7 +25,6 @@ content_costs AS (
     FROM dim_content dc
     INNER JOIN base_contents bc
         ON dc.content_id = bc.content_id
-    WHERE dc.production_type = 'Original BigMedia'
       AND bc.production_cost_euros IS NOT NULL
 ),
 
@@ -36,7 +35,6 @@ viewing_hours_by_content AS (
     FROM fct_viewings fv
     INNER JOIN dim_content dc
         ON fv.content_fk = dc.content_sk
-    WHERE dc.production_type = 'Original BigMedia'
     GROUP BY fv.content_fk
 )
 

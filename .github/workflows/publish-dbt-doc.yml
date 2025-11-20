@@ -1,0 +1,83 @@
+name: Deploy dbt Documentation to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:  # Permet de déclencher manuellement le workflow
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Empêche plusieurs déploiements simultanés
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      # Pour créer le fichier JSON du service account depuis le secret GitHub, 
+      # on écrit le contenu du secret dans un fichier JSON
+      - name: Create service account keyfile
+        run: |
+          echo '${{ secrets.DBT_SERVICE_ACCOUNT_JSON }}' > ${{ github.workspace }}/dbt/service-account.json
+      
+      - name: Configure dbt profiles
+        run: |
+          cd dbt
+          cp profiles.tpl.yml profiles.yml
+          # Remplace les variables d'environnement dans profiles.yml
+          sed -i 's|{{ env_var("DBT_KEYFILE_PATH") }}|service-account.json|g' profiles.yml
+        env:
+          DBT_KEYFILE_PATH: service-account.json
+      
+      - name: Install dbt packages
+        run: |
+          cd dbt
+          dbt deps
+      
+      - name: Generate dbt documentation
+        run: |
+          cd dbt
+          dbt docs generate --profiles-dir . --target dev
+        env:
+          DBT_KEYFILE_PATH: service-account.json
+      
+      - name: Prepare documentation for GitHub Pages
+        run: |
+          mkdir -p public
+          cp dbt/target/index.html public/
+          cp dbt/target/manifest.json public/
+          cp dbt/target/catalog.json public/
+          cp dbt/target/graph.gpickle public/ 2>/dev/null || true
+      
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+      
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'public'
+      
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+

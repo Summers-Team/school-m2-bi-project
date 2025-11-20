@@ -168,7 +168,7 @@ def generate_viewing_logs(n: int, user_ids: list, content_durations: dict) -> li
     """
     Génère des logs de visionnage avec des comportements de binge-watching réalistes.
     
-    Environ 40% des logs sont générés en sessions de binge-watching (3-6 épisodes
+    Environ 8% des logs sont générés en sessions de binge-watching (3-6 épisodes
     d'une même série regardés le même jour), le reste sont des visionnages normaux
     aléatoires.
 
@@ -194,9 +194,9 @@ def generate_viewing_logs(n: int, user_ids: list, content_durations: dict) -> li
     end_date = datetime.now()
     start_date = end_date - timedelta(days=30)
     
-    # Configuration : environ 40% des logs en binge-watching
-    # Une session de binge = 3-6 épisodes, donc prenons une moyenne de 4
-    binge_ratio = 0.22
+    # Configuration : environ 8% des logs en binge-watching
+    # Une session de binge = 3-6 épisodes, moyenne de 4
+    binge_ratio = 0.08
     avg_episodes_per_binge = 4
     num_binge_sessions = int((n * binge_ratio) / avg_episodes_per_binge)
     
@@ -237,6 +237,7 @@ def generate_viewing_logs(n: int, user_ids: list, content_durations: dict) -> li
     print(f"  → Génération de {normal_logs_to_generate} visionnages normaux...")
     
     for _ in range(normal_logs_to_generate):
+        user_id = random.choice(user_ids)
         content_id = random.choice(content_ids)
         total_duration_sec = content_durations[content_id] * 60
         
