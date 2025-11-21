@@ -23,14 +23,8 @@ variable "bq_prod_dataset_id" {
   default     = "bi_dataset_prod"
 }
 
-variable "sa_account_id" {
+variable "sa_dbt_id" {
   description = "Service account account_id (local part) for DBT"
   type        = string
-  default     = "projet-m2-bi-dbt-sa"
-}
-
-variable "sa_key_path" {
-  description = "Local path where the service account key JSON will be stored (not created by TF)"
-  type        = string
-  default     = ".secrets/sa_key.json"
+  default     = "projet-bi-dbt-sa"
 }

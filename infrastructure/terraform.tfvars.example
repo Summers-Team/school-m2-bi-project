@@ -1,7 +1,3 @@
 # BigQuery dataset IDs - customize as needed
 bq_dev_dataset_id  = "your-dev-dataset"
 bq_prod_dataset_id = "your-prod-dataset"
-
-# Service account details
-sa_account_id = "your-sa-name"
-sa_key_path   = ".secrets/sa_key.json"

@@ -17,7 +17,7 @@ resource "google_bigquery_dataset" "prod_dataset" {
 
 # Service account for dbt and minimal IAM bindings
 resource "google_service_account" "dbt_sa" {
-  account_id   = var.sa_account_id
+  account_id   = var.sa_dbt_id
   display_name = "DBT service account"
 }
 
