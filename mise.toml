@@ -3,13 +3,31 @@ gcloud = "latest"
 opentofu = "latest"
 uv = 'latest'
 
+[hooks]
+enter = ["scripts/sync_env"]
+
+[[watch_files]]
+patterns = [".env.example"]
+run = "scripts/sync_env"
+
 [env]
 '_'.file = { path = ".env" }
-TF_LOG = { value = "DEBUG" }
+'_'.source = { path = "scripts/get_git_env.sh" }
+# GCLOUD_PROJECT = { required = true }
+# GCLOUD_REGION = { required = true }
+# PREFECT_API_URL = { required = true }
+# PREFECT_API_KEY = { required = true }
 
-GCLOUD_SA_EMAIL = { value = "{{env.GCLOUD_SA_ID}}@{{env.GCLOUD_PROJECT}}.iam.gserviceaccount.com" }
-TF_VAR_region = { value = "{{env.GCLOUD_REGION}}" }
-TF_VAR_project_id = { value = "{{env.GCLOUD_PROJECT}}" }
+# TF_LOG = { value = "DEBUG" }
+PREFECT_PROFILES_PATH = { value = "profiles.toml" }
+
+GCLOUD_SA_ID = { value = "{{get_env(name='GCLOUD_PROJECT', default='default')}}-sa" }
+TERRAFORM_STATE_BUCKET = { value = "{{get_env(name='GCLOUD_PROJECT', default='default')}}-tfstate" }
+
+GCLOUD_SA_EMAIL = { value = "{{get_env(name='GCLOUD_PROJECT', default='default')}}-sa@{{get_env(name='GCLOUD_PROJECT', default='default')}}.iam.gserviceaccount.com" }
+TF_VAR_region = { value = "{{get_env(name='GCLOUD_REGION', default='default')}}" }
+TF_VAR_project_id = { value = "{{get_env(name='GCLOUD_PROJECT', default='default')}}" }
+TF_VAR_sa_generic_id = { value = "{{get_env(name='GCLOUD_SA_ID', default='default')}}" }
 
 [settings]
 python.uv_venv_auto = true
@@ -18,6 +36,7 @@ python.uv_venv_auto = true
 description = "Lock Python dependencies into requirements.txt using pip-compile."
 run = "uv pip compile pyproject.toml -o requirements.txt"
 
+# [DEPRECATED]
 [tasks."infra:sync_vars"]
 description = "Create missing .tfvars from .tfvars.example; append new variables as commented placeholders and warn the user to set them."
 sources = ["infrastructure/*.tfvars.example"]
@@ -77,6 +96,7 @@ tofu -chdir=infrastructure output -json > "${OUTPUT_PATH}"
 echo "Terraform outputs written to ${OUTPUT_PATH}."
 '''
 
+# [DEPRECATED]
 [tasks.sync_env]
 description = "Create missing .env from .env.example; append new variables as commented placeholders and warn the user to set them."
 sources = [".env.example"]
@@ -90,7 +110,7 @@ flag "--log-level <level>" help="Logging level (debug, info, warning, error, cri
 }
 flag "--fail-on-missing" help="Exit with non-zero status when new placeholder vars are added" negate="--no-fail-on-missing" default=#true
 '''
-run = 'scripts/sync_env'
+run = './scripts/sync_env'
 
 [tasks."infra:provide_backend"]
 description = "Provision the backend infrastructure required for OpenTofu state storage."
@@ -102,27 +122,18 @@ echo "Backend prerequisites satisfied."
 '''
 
 [tasks."gcloud:auth"]
-description = "Authenticate gcloud and ensure both CLI and application-default credentials are ready."
-env = { GCLOUD_PROJECT = { required = true } }
+description = "Ensure ADC and CLI are authenticated without modifying global config."
 run = '''
 set -euo pipefail
 
-PROJECT_ID="${GCLOUD_PROJECT}"
-
-if gcloud auth print-access-token > /dev/null 2>&1; then
-    ACTIVE_ACCOUNT=$(gcloud config get-value account 2>/dev/null || true)
-    echo "gcloud CLI already authenticated as ${ACTIVE_ACCOUNT}."
-else
+# Check CLI auth
+if ! gcloud auth print-access-token > /dev/null 2>&1; then
     echo "Launching gcloud login flow..."
     gcloud auth login
 fi
 
-echo "Setting active project to ${PROJECT_ID}..."
-gcloud config set project "${PROJECT_ID}"
-
-if gcloud auth application-default print-access-token > /dev/null 2>&1; then
-    echo "Application-default credentials already configured."
-else
+# Check ADC (Application Default Credentials)
+if ! gcloud auth application-default print-access-token > /dev/null 2>&1; then
     echo "Configuring application-default credentials..."
     gcloud auth application-default login
 fi
@@ -183,3 +194,6 @@ gcloud iam service-accounts keys create "${OUTPUT_PATH}" --iam-account "${EMAIL}
 chmod 600 "${OUTPUT_PATH}"
 echo "Service account key written to ${OUTPUT_PATH}."
 '''
+
+
+[tasks."prefect_cloud:auth"]
