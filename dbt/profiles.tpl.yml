@@ -4,18 +4,18 @@ projet_m2_bi:
     dev:
       type: bigquery
       method: service-account
-      project: "${project}"
-      dataset: ${dev_dataset}
-      keyfile: "${sa_key_path}"
+      project: "{{ env.GCLOUD_PROJECT | default(tf.project_id, true) }}"
+      dataset: "{{ env.BQ_DEV_DATASET | default(tf.bq_dev_dataset_id, true) | default(tf.dev_dataset, true) }}"
+      keyfile: "{{ env.GCP_SA_KEY_PATH | default(tf.sa_key_path, true) | default('.secrets/sa_key.json', true) }}"
       threads: 1
-      location: ${region}
+      location: "{{ env.GCLOUD_REGION | default(tf.region, true) }}"
 
     prod:
       type: bigquery
       method: service-account
-      project: "${project}"
-      dataset: ${prod_dataset}
-      keyfile: "${sa_key_path}"
+      project: "{{ env.GCLOUD_PROJECT | default(tf.project_id, true) }}"
+      dataset: "{{ env.BQ_PROD_DATASET | default(tf.bq_prod_dataset_id, true) | default(tf.prod_dataset, true) }}"
+      keyfile: "{{ env.GCP_SA_KEY_PATH | default(tf.sa_key_path, true) }}"
       threads: 4
-      location: ${region}
+      location: "{{ env.GCLOUD_REGION | default(tf.region, true) }}"
 
