@@ -18,7 +18,7 @@ pull:
   - prefect.deployments.steps.git_clone:
       id: git-clone
       branch: main
-      repository: https://github.com/Bafbi/projet-m2-bi.git
+      repository: {{ env.GIT_REMOTE_URL }}
   - prefect.deployments.steps.run_shell_script:
       script: uv pip install -r requirements.txt
       directory: "{{ git-clone.directory }}"
