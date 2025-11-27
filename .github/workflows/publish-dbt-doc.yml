@@ -1,4 +1,4 @@
-name: Deploy dbt Documentation to GitHub Pages
+name: Deploy dbt doc to GitHub Pages
 
 on:
   push:
