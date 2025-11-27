@@ -574,16 +574,16 @@ wheels = [
 
 [[package]]
 name = "dbterd"
-version = "1.21.0"
+version = "1.12.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
     { name = "dbt-artifacts-parser" },
     { name = "requests" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/03/64/1b1bfd0e5099e1c104fae5558b9e284d7e75801a87fa8ae3163280c39a90/dbterd-1.21.0.tar.gz", hash = "sha256:827c664e8502536f7cb0393614b6b65f6945326393a4b96f295a47b95e39eab8", size = 38290, upload-time = "2025-10-20T10:36:05.17Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/32/50/c6571e87452a3281383570188556157214c0e7838ec7846d91103d1739f7/dbterd-1.12.2.tar.gz", hash = "sha256:d30d04aa4a3814f918263ccc2b0de7cb73302d1badf174968b2175f8e7fb8e1a", size = 29817, upload-time = "2024-03-30T04:12:47.918Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/72/84/107682417ef0885ff7dc9249b81f77f4b0f76e8f7b3672c38e27f7952a42/dbterd-1.21.0-py3-none-any.whl", hash = "sha256:5daf8064b7b256ba1a5213da6ef726fd337c3819fbd36170873f23488b85f115", size = 48579, upload-time = "2025-10-20T10:36:03.857Z" },
+    { url = "https://files.pythonhosted.org/packages/ac/e2/1e9693e4cb81406aca72a0b774c927c0bb8894db85172e3a41a1c08e7601/dbterd-1.12.2-py3-none-any.whl", hash = "sha256:5930d47ccd4fc5cdfa519a2d4d70051211722bd4fb7d367ad840d4530df91316", size = 44021, upload-time = "2024-03-30T04:12:45.95Z" },
 ]
 
 [[package]]
@@ -1964,7 +1964,7 @@ dependencies = [
 requires-dist = [
     { name = "dbt-bigquery", specifier = ">=1.10.2" },
     { name = "dbt-core", specifier = ">=1.10.13" },
-    { name = "dbterd", specifier = ">=1.21.0,<1.22.0" },
+    { name = "dbterd", specifier = ">=1.12.0,<1.13.0" },
     { name = "faker", specifier = ">=37.11.0" },
     { name = "prefect", extras = ["dbt"], specifier = ">=3.4.20" },
     { name = "prefect-cloud", specifier = ">=0.1.8" },
