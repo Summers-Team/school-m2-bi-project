@@ -35,15 +35,16 @@ models:
           - relationships:
               to: ref('dim__content')
               field: content_sk
-              
-      - name: date_fk
-        description: "Foreign key to dim_date dimension (format YYYYMMDD)"
+      
+      - name: series_fk
+        description: "Foreign key to dim_series dimension"
         tests:
           - not_null
           - relationships:
-              to: ref('dim__date')
-              field: date_sk
+              to: ref('dim__series')
+              field: series_sk
               
+      
       - name: device_fk
         description: "Foreign key to dim_devices dimension"
         tests:
@@ -67,6 +68,15 @@ models:
               
       - name: is_completed_view
         description: "Boolean indicator if content was viewed >= 90% (metric)"
+        tests:
+          - not_null
+      
+      - name: start_timestamp
+        description: "Timestamp when the viewing session started"
+        tests:
+          - not_null
+      - name: end_timestamp
+        description: "Timestamp when the viewing session ended"
         tests:
           - not_null
 
