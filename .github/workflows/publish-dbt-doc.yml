@@ -49,7 +49,7 @@ jobs:
         run: |
           cd dbt
           # Extract profile name from dbt_project.yml using Python (available from previous step)
-          DBT_PROFILE=$(python -c "import yaml; print(yaml.safe_load(open('dbt_project.yml'))['profile'])")
+          DBT_PROFILE=$(uv run python -c "import yaml; print(yaml.safe_load(open('dbt_project.yml'))['profile'])")
           
           cat > profiles.yml <<EOF
           $DBT_PROFILE:
@@ -76,19 +76,19 @@ jobs:
       - name: Install dbt packages
         run: |
           cd dbt
-          dbt deps
+          uv run dbt deps
       
       - name: Generate dbt documentation
         run: |
           cd dbt
-          dbt docs generate --profiles-dir . --target dev
+          uv run dbt docs generate --profiles-dir . --target dev
 
       - name: Generate ERD (Mermaid format)
         run: |
           cd dbt
           # dbterd lit le manifest.json généré juste avant
           # On filtre pour n'avoir que le modèle dimensionnel (ex: tables commençant par dim_ ou fct_)
-          dbterd run --target mermaid --select "wildcard:dim_*,fct_*"
+          uv run dbterd run --target mermaid --select "wildcard:dim_*,fct_*"
                 
       # Partie pour créer un ERD (Entity Relation Diagram) des modèles
       - name: Create ERD HTML page
