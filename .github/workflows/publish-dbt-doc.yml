@@ -88,28 +88,34 @@ jobs:
           cd dbt
           # dbterd lit le manifest.json généré juste avant
           # On filtre pour n'avoir que le modèle dimensionnel (ex: tables commençant par dim_ ou fct_)
-          uv run dbterd run --target mermaid --select "wildcard:dim_*,fct_*"
+          # Utilisation de l'algorithme parse_manifest au lieu de test_relationship pour éviter le bug IndexError
+          uv run dbterd run --target mermaid --algorithm parse_manifest --select "wildcard:dim_*,fct_*"
                 
       # Partie pour créer un ERD (Entity Relation Diagram) des modèles
       - name: Create ERD HTML page
         run: |
           cd dbt
           # fichier HTML avec Mermaid.js pour afficher le diagramme
-          echo '<!DOCTYPE html>
+          if [ -f target/output.md ]; then
+            echo '<!DOCTYPE html>
           <html>
+          <head>
+            <title>Entity Relationship Diagram</title>
+          </head>
           <body>
+            <h1>Entity Relationship Diagram</h1>
             <script type="module">
               import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
               mermaid.initialize({ startOnLoad: true });
             </script>
             <div class="mermaid">
           ' > target/erd.html
-          
-          # On injecte le contenu généré par dbterd
-          cat target/output.md >> target/erd.html
-          
-          # On ferme les balises HTML
-          echo '
+            
+            # On injecte le contenu généré par dbterd
+            cat target/output.md >> target/erd.html
+            
+            # On ferme les balises HTML
+            echo '
             </div>
           </body>
           </html>' >> target/erd.html
