@@ -89,7 +89,7 @@ jobs:
           # dbterd lit le manifest.json généré juste avant
           # On filtre pour n'avoir que le modèle dimensionnel (ex: tables commençant par dim_ ou fct_)
           # Utilisation de l'algorithme parse_manifest au lieu de test_relationship pour éviter le bug IndexError
-          uv run dbterd run --target mermaid --algorithm parse_manifest --select "wildcard:dim_*,fct_*"
+          uv run dbterd run --target mermaid --algo parse_manifest --select "wildcard:dim_*,fct_*"
                 
       # Partie pour créer un ERD (Entity Relation Diagram) des modèles
       - name: Create ERD HTML page
