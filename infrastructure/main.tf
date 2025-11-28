@@ -1,6 +1,11 @@
+locals {
+  bq_dev_dataset_id = "${var.project_id}.${var.dev_suffix}"
+  bq_prod_dataset_id = "${var.project_id}.${var.prod_suffix}"
+}
+
 # Dev dataset
 resource "google_bigquery_dataset" "dev_dataset" {
-  dataset_id                  = var.bq_dev_dataset_id
+  dataset_id                  = local.bq_dev_dataset_id
   location                    = var.region
   description                 = "Development dataset for BI project"
   friendly_name               = "BI Dataset (dev)"
@@ -9,7 +14,7 @@ resource "google_bigquery_dataset" "dev_dataset" {
 
 # Prod dataset
 resource "google_bigquery_dataset" "prod_dataset" {
-  dataset_id    = var.bq_prod_dataset_id
+  dataset_id    = local.bq_prod_dataset_id
   location      = var.region
   description   = "Production dataset for BI project"
   friendly_name = "BI Dataset (prod)"

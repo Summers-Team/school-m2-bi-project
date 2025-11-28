@@ -1,3 +1,0 @@
-# BigQuery dataset IDs - customize as needed
-bq_dev_dataset_id  = "your-dev-dataset"
-bq_prod_dataset_id = "your-prod-dataset"

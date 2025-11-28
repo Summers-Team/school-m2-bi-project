@@ -11,14 +11,14 @@ variable "region" {
 
 
 
-variable "bq_dev_dataset_id" {
-  description = "BigQuery dataset ID for dev"
+variable "dev_suffix" {
+  description = "Suffix for BigQuery dataset ID for dev"
   type        = string
   default     = "bi_dataset_dev"
 }
 
-variable "bq_prod_dataset_id" {
-  description = "BigQuery dataset ID for prod"
+variable "prod_suffix" {
+  description = "Suffix for BigQuery dataset ID for prod"
   type        = string
   default     = "bi_dataset_prod"
 }
