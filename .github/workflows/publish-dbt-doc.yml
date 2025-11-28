@@ -81,6 +81,7 @@ jobs:
       - name: Generate dbt documentation
         run: |
           cd dbt
+          uv run dbt compile --profiles-dir . --target dev
           uv run dbt docs generate --profiles-dir . --target dev
 
       - name: Generate ERD (Mermaid format)
