@@ -50,7 +50,12 @@ if _cmd_exists git && _safe git rev-parse --git-dir >/dev/null; then
   GIT_REPO_ROOT=$(_safe git rev-parse --show-toplevel || echo "")
   GIT_COMMIT=$(_safe git rev-parse --verify HEAD 2>/dev/null || echo "")
   if [ -n "$GIT_COMMIT" ]; then
-    GIT_COMMIT_SHORT=${GIT_COMMIT:0:7}
+    # If GIT_COMMIT is at least 7 characters, use the first 7; otherwise, use the whole value (may be empty or short in edge cases)
+    if [ "${#GIT_COMMIT}" -ge 7 ]; then
+      GIT_COMMIT_SHORT=${GIT_COMMIT:0:7}
+    else
+      GIT_COMMIT_SHORT="$GIT_COMMIT"
+    fi
   fi
   # branch or short ref
   GIT_BRANCH=$(_safe git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")

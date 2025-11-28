@@ -33,7 +33,7 @@ def load_terraform_outputs(path: Optional[Path]) -> Dict[str, Any]:
             data = json.load(f)
             # Terraform outputs are in format {"key": {"value": "val", "type": "..."}}
             # We want to flatten this to {"key": "val"}
-            return {k: v.get("value") for k, v in data.items()}
+            return {k: v.get("value") if isinstance(v, dict) else v for k, v in data.items()}
     except json.JSONDecodeError:
         console.print(f"[red]Error:[/red] Failed to parse terraform outputs at [bold]{path}[/bold]")
         return {}

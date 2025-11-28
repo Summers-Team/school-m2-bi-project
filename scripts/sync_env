@@ -59,8 +59,10 @@ def get_env_or_arg(key: str, default: str, is_bool: bool = False):
             try:
                 idx = sys.argv.index(arg_flag)
                 val = sys.argv[idx+1]
-            except (ValueError, IndexError):
+            except ValueError:
                 val = default
+            except IndexError:
+                raise ValueError(f"Flag '{arg_flag}' requires a value, but none was provided.")
 
     if is_bool:
         return val.lower() in ("true", "1", "yes")

@@ -1,6 +1,6 @@
 locals {
-  bq_dev_dataset_id = "${var.project_id}.${var.dev_suffix}"
-  bq_prod_dataset_id = "${var.project_id}.${var.prod_suffix}"
+  bq_dev_dataset_id = "${var.project_id}_${var.dev_suffix}"
+  bq_prod_dataset_id = "${var.project_id}_${var.prod_suffix}"
 }
 
 # Dev dataset
