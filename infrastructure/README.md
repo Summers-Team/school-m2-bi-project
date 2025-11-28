@@ -6,22 +6,40 @@ This document explains how to provision the Google Cloud resources and supportin
 
 - [OpenTofu](https://opentofu.org/) or [Terraform](https://www.terraform.io/) installed
 - [uv](https://docs.astral.sh/uv/) package manager installed
+- [mise](https://mise.jdx.dev/) task runner installed
 - Google Cloud SDK (`gcloud`) installed and authenticated
 - A GCP project with billing enabled
 - Permissions to create resources in BigQuery, Cloud Storage, and IAM
 
 ## Deployment Steps
 
-### Quick bootstrap with `mise`
+### Automated setup with `mise`
 
 Most of the repetitive setup can be automated through the tasks declared in `mise.toml`:
 
 1. **Sync local env vars:** `mise run sync_env` copies `.env.example` to `.env` and highlights new placeholders.
 2. **Authenticate gcloud:** `mise run gcloud:auth` ensures the CLI is logged in, sets the active project from `.env`, and prepares application-default credentials for OpenTofu.
-3. **Provision the Terraform state bucket:** `mise run gcloud:provide_state_bucket` idempotently creates `gs://${TERRAFORM_STATE_BUCKET}` (using the optional `TERRAFORM_STATE_BUCKET_LOCATION`) via `gcloud storage buckets create`, exactly as documented in the [Cloud Storage quickstart](https://cloud.google.com/storage/docs/discover-object-storage-gcloud#local-shell).
-4. **Prepare backend prerequisites:** `mise run infra:provide_backend` depends on the previous steps, so running `mise run infra:init` or `mise run infra:plan` will automatically ensure the remote state bucket exists before touching OpenTofu.
-5. **Generate the service-account key:** `mise run gcloud:create_sa_key --email <sa-email>` writes `.secrets/sa_key.json` (override with `--output` if needed, or add `--dry-run` to preview). The command reads `GCLOUD_SA_EMAIL` from the environment when the flag is omitted.
-6. **Capture Terraform outputs:** `mise run infra:outputs --file infrastructure/terraform-outputs.json` runs `tofu output -json` after `infra:init` and stores the JSON alongside your IaC.
+3. **Provision the Terraform state bucket:** `mise run gcloud:provide_state_bucket` idempotently creates `gs://${TERRAFORM_STATE_BUCKET}` (using the optional `TERRAFORM_STATE_BUCKET_LOCATION`) via `gcloud storage buckets create`.
+4. **Initialize Infrastructure:** `mise run infra:init` initializes OpenTofu/Terraform with the correct backend configuration.
+5. **Plan Infrastructure:** `mise run infra:plan` shows the changes that will be applied.
+6. **Apply Infrastructure:**
+   ```bash
+   tofu -chdir=infrastructure apply
+   ```
+7. **Export Outputs:** `mise run infra:outputs` exports the Terraform outputs to `infrastructure/terraform-outputs.json`.
+8. **Generate Configurations:**
+   ```bash
+   mise run dbt:render_profiles
+   mise run prefect:render_configs
+   ```
+   This generates `dbt/profiles.yml` and `prefect.yml` using the Terraform outputs and environment variables.
+9. **Setup Prefect Blocks:**
+   ```bash
+   mise run prefect:setup_blocks --save
+   ```
+   This creates the necessary Prefect blocks (GCP credentials, BigQuery targets, dbt profiles) for your flows.
+
+### Manual Steps (Underlying Workflow)
 
 You can still perform the steps manually if you prefer; the remainder of this guide documents the underlying workflow.
 
@@ -32,11 +50,7 @@ You can still perform the steps manually if you prefer; the remainder of this gu
    ```
 
 2. **Configure variables**
-   ```bash
-   cp infrastructure/terraform.tfvars.example infrastructure/terraform.tfvars
-   ```
-   Edit `infrastructure/terraform.tfvars` to set your project ID, state bucket name, dataset IDs, and service account settings.
-   You can keep `.env` in sync with `mise run sync_env`, which ensures tasks such as `gcloud:auth` and `gcloud:provide_state_bucket` read the latest identifiers.
+   Ensure `.env` is set up correctly. `mise` uses `.env` to populate environment variables.
 
 3. **Initialize and apply the infrastructure**
    ```bash
@@ -45,68 +59,26 @@ You can still perform the steps manually if you prefer; the remainder of this gu
    tofu plan
    tofu apply
    ```
-   Replace `<your-state-bucket>` with the value configured in `terraform.tfvars`. The backend block already fixes the prefix to `terraform/state`.
-   If you prefer task automation, run `mise run infra:init` (which depends on `gcloud:provide_state_bucket`) followed by `mise run infra:plan`/`infra:apply`.
 
 4. **Export Terraform outputs**
    ```bash
    tofu output -json > terraform-outputs.json
    ```
-   Keep this JSON file alongside the Terraform configuration (default path consumed by the profile generator). If you prefer automation, run `mise run infra:outputs --file infrastructure/terraform-outputs.json` (it defaults to that path) after `mise run infra:init` to capture the outputs.
 
-6. **Create and store the service account key (if required)**
+5. **Generate dbt profiles and Prefect blocks**
+   
+   The project uses `scripts/render_template` and `scripts/setup_prefect_blocks.py` to generate configurations.
+
+   **Render templates:**
    ```bash
-   # manual alternative if you do not use mise
-   gcloud iam service-accounts keys create .secrets/sa_key.json --iam-account <sa-email>
+   uv run scripts/render_template dbt/profiles.tpl.yml
+   uv run scripts/render_template prefect.tpl.yml
    ```
-   `<sa-email>` is available in the Terraform outputs. The setup module automatically uses `.secrets/sa_key.json` to create the GCP credentials block. You can also run `mise run gcloud:create_sa_key --email <sa-email>` (with optional `--output` and `--dry-run`) to reuse the automated workflow described above.
 
-5. **Generate the dbt profiles and Prefect blocks**
-   
-   The project includes an automated setup module that:
-   - Parses the dbt profile template (`dbt/profiles.tpl.yml`)
-   - Detects all defined targets (dev, prod, etc.)
-   - Generates local `dbt/profiles.yml` from Terraform outputs
-   - Creates Prefect blocks for all targets automatically
-   
-   **Complete setup (local profiles + Prefect blocks):**
+   **Setup Prefect Blocks:**
    ```bash
-   cd ..
-   uv run python -m infrastructure.setup_profiles
+   uv run scripts/setup_prefect_blocks.py --profiles dbt/profiles.yml --service-account .secrets/sa_key.json --save
    ```
-   
-   **Or use specific modes:**
-   ```bash
-   # Local profiles only
-   uv run python -m infrastructure.setup_profiles --local-only
-   
-   # Prefect blocks only
-   uv run python -m infrastructure.setup_profiles --blocks-only
-   ```
-   
-   This will create:
-   - Local `dbt/profiles.yml` for command-line dbt usage
-   - Prefect blocks for orchestrated workflows:
-     - `gcp-credentials` - GCP service account credentials
-     - `bigquery-target-configs-{target}` - BigQuery config per target
-     - `dbt-cli-profile-{target}` - dbt CLI profile per target
-     - `dbt-operation-run-{target}` - dbt run operation per target
-     - `dbt-operation-test-{target}` - dbt test operation per target
-     - `dbt-operation-debug-{target}` - dbt debug operation per target
-
-
-
-## Setup Profiles Module
-
-The `infrastructure/setup_profiles/` module provides automated configuration for dbt profiles and Prefect blocks with multi-target support.
-
-**Key features:**
-- Automatically detects all targets from `dbt/profiles.tpl.yml` (dev, prod, etc.)
-- Generates local `dbt/profiles.yml` from Terraform outputs
-- Creates Prefect blocks for each target (credentials, configs, profiles, operations)
-- Supports flexible execution modes (complete, local-only, blocks-only)
-
-See [`infrastructure/setup_profiles/README.md`](setup_profiles/README.md) for detailed usage examples and architecture documentation.
 
 ## Notes
 

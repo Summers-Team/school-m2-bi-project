@@ -19,8 +19,9 @@ J'ai modifié votre code pour suivre une **architecture en deux phases** :
 ```
 Phase 1 : SETUP (une fois)              Phase 2 : EXECUTION (à chaque run)
 ─────────────────────────              ────────────────────────────────
-infrastructure/setup_profiles/   →     prefect_flows/pipeline.py
-Crée les blocs Prefect                 Utilise les blocs créés
+scripts/setup_prefect_blocks.py   →     prefect_flows/pipeline.py
+(via mise run prefect:setup_blocks)     Utilise les blocs créés
+Crée les blocs Prefect
 ```
 
 ### 2. Modifications Apportées
