@@ -1,0 +1,20 @@
+projet_m2_bi:
+  target: dev
+  outputs:
+    dev:
+      type: bigquery
+      method: service-account
+      project: "test-terraform-473818"
+      dataset: "test_terraform_473818_dev"
+      keyfile: "../.secrets/sa_key.json"
+      threads: 1
+      location: "europe-west9"
+
+    prod:
+      type: bigquery
+      method: service-account
+      project: "test-terraform-473818"
+      dataset: "test_terraform_473818_prod"
+      keyfile: ".secrets/sa_key.json"
+      threads: 4
+      location: "europe-west9"

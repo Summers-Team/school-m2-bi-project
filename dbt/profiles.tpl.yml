@@ -6,7 +6,7 @@ projet_m2_bi:
       method: service-account
       project: "{{ env.GCLOUD_PROJECT | default(tf.project_id, true) }}"
       dataset: "{{ env.BQ_DEV_DATASET | default(tf.bq_dev_dataset_id, true) | default(tf.dev_dataset, true) }}"
-      keyfile: "{{ env.GCP_SA_KEY_PATH | default(tf.sa_key_path, true) | default('.secrets/sa_key.json', true) }}"
+      keyfile: "../{{ env.GCP_SA_KEY_PATH | default(tf.sa_key_path, true) | default('.secrets/sa_key.json', true) }}"
       threads: 1
       location: "{{ env.GCLOUD_REGION | default(tf.region, true) }}"
 
