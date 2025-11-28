@@ -428,18 +428,6 @@ wheels = [
 ]
 
 [[package]]
-name = "dbt-artifacts-parser"
-version = "0.12.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "pydantic" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/4a/5a/fa9f9227fdef03c969920a2d75f4552898f7643388df506d870d2e2be733/dbt_artifacts_parser-0.12.0.tar.gz", hash = "sha256:9d1c0ed41926102c1c39fdd780e1a332f58c9b794e94dba0dcf5dfefc847d6ea", size = 229564, upload-time = "2025-11-27T06:07:26.852Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/d1/a7/1efa2adeea33e4942d4cf54593a4436a63fecb609684393b6b8a5dcc4197/dbt_artifacts_parser-0.12.0-py3-none-any.whl", hash = "sha256:3db93df7969c3f22c6fbf75a51b0af4c21b189d8db6f3c54e8471102c775bb0d", size = 234910, upload-time = "2025-11-27T06:07:25.268Z" },
-]
-
-[[package]]
 name = "dbt-bigquery"
 version = "1.10.2"
 source = { registry = "https://pypi.org/simple" }
@@ -541,6 +529,18 @@ wheels = [
 ]
 
 [[package]]
+name = "dbt-model-erd"
+version = "0.1.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "ruamel-yaml" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/33/1e/50b7bfd5d0bd3e57c8a840dc1509dc780452a8c69249036661e502b47422/dbt_model_erd-0.1.1.tar.gz", hash = "sha256:9ce53de1e7ab4f117703626f7dbc65ac5b9b4ee56b65b0749f55909d8716c9c8", size = 46512, upload-time = "2025-10-06T22:22:49.965Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5e/3a/bdaa1b099fab5b3be9203994261726cfc9a0491dc72fe6320dd30760ec14/dbt_model_erd-0.1.1-py3-none-any.whl", hash = "sha256:72ee40a40137a4d9c68be87ff3e481ae1fa71ead0591f3380599b6247be70bd0", size = 22257, upload-time = "2025-10-06T22:22:49.107Z" },
+]
+
+[[package]]
 name = "dbt-protos"
 version = "1.0.375"
 source = { registry = "https://pypi.org/simple" }
@@ -570,20 +570,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/b0/91/c702d8fb143541fda10f5eb7a7a89f34bda38ee043ecb3e3653363d0c5a0/dbt_semantic_interfaces-0.9.0.tar.gz", hash = "sha256:5c921257dce8bb51c9ffb5479f2bdd959e16ebfb98ee833de6daa70788c47271", size = 93865, upload-time = "2025-07-09T20:06:30.454Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b3/82/41708b2b69d5fead88dea5ca0d863d6291da83ca6f1bd19246842d397e2b/dbt_semantic_interfaces-0.9.0-py3-none-any.whl", hash = "sha256:1b54c06ba89190a47a7f0563360930a0cce869e55b484ca09d261ade0e319155", size = 147008, upload-time = "2025-07-09T20:06:32.466Z" },
-]
-
-[[package]]
-name = "dbterd"
-version = "1.22.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "click" },
-    { name = "dbt-artifacts-parser" },
-    { name = "requests" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/05/33/31967003211402581a118b7eea0a7b35f494501c780e576a850b59042bfb/dbterd-1.22.0.tar.gz", hash = "sha256:e762f378b605c9ae9debc022010368867738c42810b7b135fc3bead36c3d299a", size = 44001, upload-time = "2025-10-31T03:36:01.115Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/22/85/e1ba263bad92e3896d8cf085ef725284f397f371a52494266353566d2c9d/dbterd-1.22.0-py3-none-any.whl", hash = "sha256:d14e495127ff010a0a88d1d4178525cc23d0ee95394f9a80843bfab4f2b9f34d", size = 56633, upload-time = "2025-10-31T03:35:59.338Z" },
 ]
 
 [[package]]
@@ -1949,10 +1935,9 @@ name = "projet-m2-bi"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
-    { name = "dbt-artifacts-parser" },
     { name = "dbt-bigquery" },
     { name = "dbt-core" },
-    { name = "dbterd" },
+    { name = "dbt-model-erd" },
     { name = "faker" },
     { name = "prefect", extra = ["dbt"] },
     { name = "prefect-cloud" },
@@ -1963,10 +1948,9 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "dbt-artifacts-parser", specifier = ">=0.12.0" },
     { name = "dbt-bigquery", specifier = ">=1.10.2" },
     { name = "dbt-core", specifier = ">=1.10.13" },
-    { name = "dbterd", specifier = ">=1.22" },
+    { name = "dbt-model-erd", specifier = ">=0.1.1" },
     { name = "faker", specifier = ">=37.11.0" },
     { name = "prefect", extras = ["dbt"], specifier = ">=3.4.20" },
     { name = "prefect-cloud", specifier = ">=0.1.8" },

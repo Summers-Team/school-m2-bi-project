@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch:  # Permet de déclencher manuellement le workflow
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -83,43 +83,6 @@ jobs:
           cd dbt
           uv run dbt compile --profiles-dir . --target dev
           uv run dbt docs generate --profiles-dir . --target dev
-
-      - name: Generate ERD (Mermaid format)
-        run: |
-          cd dbt
-          # dbterd lit le manifest.json généré juste avant
-          # On filtre pour n'avoir que le modèle dimensionnel (ex: tables commençant par dim_ ou fct_)
-          # Utilisation de l'algorithme parse_manifest au lieu de test_relationship pour éviter le bug IndexError
-          uv run dbterd run --artifacts-dir target --target mermaid
-                
-      # Partie pour créer un ERD (Entity Relation Diagram) des modèles
-      - name: Create ERD HTML page
-        run: |
-          cd dbt
-          # fichier HTML avec Mermaid.js pour afficher le diagramme
-          if [ -f target/output.md ]; then
-            echo '<!DOCTYPE html>
-          <html>
-          <head>
-            <title>Entity Relationship Diagram</title>
-          </head>
-          <body>
-            <h1>Entity Relationship Diagram</h1>
-            <script type="module">
-              import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
-              mermaid.initialize({ startOnLoad: true });
-            </script>
-            <div class="mermaid">
-          ' > target/erd.html
-            
-            # On injecte le contenu généré par dbterd
-            cat target/output.md >> target/erd.html
-            
-            # On ferme les balises HTML
-            echo '
-            </div>
-          </body>
-          </html>' >> target/erd.html
       
       - name: Prepare documentation for GitHub Pages
         run: |
@@ -128,7 +91,6 @@ jobs:
           cp dbt/target/manifest.json public/
           cp dbt/target/catalog.json public/
           cp dbt/target/graph.gpickle public/ 2>/dev/null || true
-          cp dbt/target/erd.html public/erd.html
       
       - name: Setup Pages
         uses: actions/configure-pages@v4
