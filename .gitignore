@@ -49,6 +49,9 @@ terraform.rc
 tofu.tfstate
 tofu.tfstate.backup
 
+# Outputs
+terraform-outputs.json
+
 # Secrets
 .secrets/
 
