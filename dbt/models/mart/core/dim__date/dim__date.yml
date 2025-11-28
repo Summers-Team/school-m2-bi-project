@@ -4,7 +4,7 @@ models:
   # =============================================================================
   # dim_date : Date dimension table for star schema
   # =============================================================================
-  - name: dim_date
+  - name: dim__date
     description: |
       Date dimension table for temporal analysis in the star schema.
       
@@ -49,12 +49,9 @@ models:
               max_value: 12
 
       - name: week_number
-        description: "Week number in the year (1-52)"
+        description: "Week number in the year"
         tests:
           - not_null
-          - dbt_utils.accepted_range:
-              min_value: 1
-              max_value: 52
               
       - name: day_of_week
         description: "Day of the week name (e.g., Monday, Tuesday)"

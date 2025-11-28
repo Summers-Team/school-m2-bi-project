@@ -4,7 +4,7 @@ models:
   # =============================================================================
   # dim_devices : Device dimension table for star schema
   # =============================================================================
-  - name: dim_devices
+  - name: dim__devices
     description: |
       Device dimension table containing information about viewing platforms.
       
@@ -19,6 +19,9 @@ models:
         tests:
           - unique
           - not_null
+          - relationships:
+              to: ref('fct__viewings')
+              field: device_fk
           
       - name: device_type
         description: "Type of device used for viewing"

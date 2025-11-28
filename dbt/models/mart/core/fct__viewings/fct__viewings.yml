@@ -4,7 +4,7 @@ models:
   # =============================================================================
   # fct_viewings : Fact table for viewing events in star schema
   # =============================================================================
-  - name: fct_viewings
+  - name: fct__viewings
     description: |
       Fact table representing viewing events on the BigMedia VoD platform.
       
@@ -21,7 +21,7 @@ models:
           - not_null
           
       - name: user_fk
-        description: "Foreign key to dim_users dimension"
+        description: "Foreign key to dim__users dimension"
         tests:
           - not_null
           - relationships:
