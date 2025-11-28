@@ -36,26 +36,10 @@ python.uv_venv_auto = true
 description = "Lock Python dependencies into requirements.txt using pip-compile."
 run = "uv pip compile pyproject.toml -o requirements.txt"
 
-# [DEPRECATED]
-[tasks."infra:sync_vars"]
-description = "Create missing .tfvars from .tfvars.example; append new variables as commented placeholders and warn the user to set them."
-sources = ["infrastructure/*.tfvars.example"]
-outputs = ["infrastructure/*.tfvars"]
-usage = '''
-flag "--dir <dir>" help="Directory containing tfvars example pairs" default="infrastructure"
-flag "--pattern <pattern>" help="Glob (relative to --dir) used to locate *.tfvars.example files" default="*.tfvars.example"
-flag "--dry-run" help="Preview changes without writing files"
-flag "--log-level <level>" help="Logging level (debug, info, warning, error, critical)" default="info" {
-    choices "debug" "info" "warning" "error" "critical"
-}
-flag "--fail-on-missing" help="Exit with non-zero status when new placeholder vars are added" negate="--no-fail-on-missing" default=#true
-'''
-run = 'infrastructure/scripts/sync_vars'
-
 [tasks."infra:init"]
 description = "Run 'opentofu init' in the infrastructure directory."
 sources = ["infrastructure/providers.tf", ".env"]
-depends = ["infra:sync_vars", "infra:provide_backend"]
+depends = ["infra:provide_backend"]
 usage = '''
 flag "--enabled-gcp-backend-config" help="Enable GCP backend configuration during init" negate="--disable-gcp-backend-config" default=#true
 flag "--prefix <prefix>" help="Prefix for the Terraform state in the GCS bucket" default="terraform/state"
@@ -76,7 +60,7 @@ fi
 [tasks."infra:plan"]
 description = "Run 'opentofu plan' in the infrastructure directory."
 sources = ["infrastructure/**/*.tfvars"]
-depends = ["infra:init", "infra:provide_backend", "infra:sync_vars"]
+depends = ["infra:init", "infra:provide_backend"]
 run = "tofu -chdir=infrastructure plan"
 
 [tasks."infra:outputs"]
@@ -195,5 +179,50 @@ chmod 600 "${OUTPUT_PATH}"
 echo "Service account key written to ${OUTPUT_PATH}."
 '''
 
+[tasks."dbt:render_profiles"]
+description = "render dbt profiles.yml from template using environment variables."
+sources = ["dbt/profiles.tpl.yml"]
+outputs = ["dbt/profiles.yml"]
+depends = [ "infra:outputs" ]
+run = "scripts/render_template dbt/profiles.tpl.yml"
 
-[tasks."prefect_cloud:auth"]
+[tasks."prefect:render_configs"]
+description = "Render Prefect configuration files from templates using environment variables."
+sources = ["prefect.tpl.yml"]
+outputs = ["prefect.yml"]
+depends = [ "infra:outputs" ]
+run = "scripts/render_template prefect.tpl.yml"
+
+[tasks."prefect:setup_blocks"]
+description = "Create Prefect blocks (GCP credentials, BigQuery target configs, and DBT profiles) from the rendered dbt/profiles.yml"
+sources = ["dbt/profiles.yml"]
+depends = ["dbt:render_profiles"]
+usage = '''
+flag "--service-account <path>" help="Path to service account JSON (default: .secrets/sa_key.json)" default=".secrets/sa_key.json"
+flag "--save" help="Actually save Prefect blocks" negate="--no-save" default=#false
+flag "--overwrite" help="Overwrite existing blocks" negate="--no-overwrite" default=#false
+flag "--no-verify" help="Skip verification step after saving blocks" negate="--verify" default=#false
+flag "--targets <targets...>" help="Limit the targets to configure (space separated)" default="" 
+'''
+run = '''
+set -euo pipefail
+
+ARGS=""
+if [ "${usage_save}" = "true" ]; then
+    ARGS="${ARGS} --save"
+fi
+if [ "${usage_overwrite}" = "true" ]; then
+    ARGS="${ARGS} --overwrite"
+fi
+if [ "${usage_no_verify}" = "true" ]; then
+    ARGS="${ARGS} --no-verify"
+fi
+if [ -n "${usage_targets}" ]; then
+    ARGS="${ARGS} --targets ${usage_targets}"
+fi
+
+SVC_KEY_PATH="${usage_service_account}"
+
+echo "Running 'setup_prefect_blocks.py' with args: ${ARGS}"
+scripts/setup_prefect_blocks.py --profiles dbt/profiles.yml --service-account "${SVC_KEY_PATH}" ${ARGS}
+'''
