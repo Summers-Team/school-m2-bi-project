@@ -293,3 +293,9 @@ __marimo__/
 
 # local profil.yml
 dbt/profiles.yml
+prefect.yml
+# The project has a scripts/ folder for helpers; make sure it's not ignored by
+# the Virtualenv/Windows 'Scripts' ignore rule above.
+!scripts/
+!scripts/*
+
