@@ -4,69 +4,73 @@ models:
   # =============================================================================
   # fct_viewings : Fact table for viewing events in star schema
   # =============================================================================
-  - name: fct_viewings
-    description: |
-      Fact table representing viewing events on the BigMedia VoD platform.
-      
-      Each row represents a unique viewing session with metrics and foreign keys
-      to all dimension tables. This is the central table of the star schema.
-      
-      Grain: One row per viewing session per user per content.
-      
-    columns:
-      - name: viewing_sk
-        description: "Surrogate key for viewing event (primary key)"
-        tests:
-          - unique
-          - not_null
-          
-      - name: user_fk
-        description: "Foreign key to dim_users dimension"
-        tests:
-          - not_null
-          - relationships:
-              to: ref('dim__users')
-              field: user_sk
-              
-      - name: content_fk
-        description: "Foreign key to dim_content dimension"
-        tests:
-          - not_null
-          - relationships:
-              to: ref('dim__content')
-              field: content_sk
-              
-      - name: date_fk
-        description: "Foreign key to dim_date dimension (format YYYYMMDD)"
-        tests:
-          - not_null
-          - relationships:
-              to: ref('dim__date')
-              field: date_sk
-              
-      - name: device_fk
-        description: "Foreign key to dim_devices dimension"
-        tests:
-          - not_null
-          - relationships:
-              to: ref('dim__devices')
-              field: device_sk
-              
-      - name: view_duration_minutes
-        description: "Viewing duration in minutes (metric)"
-        tests:
-          - not_null
-          
-      - name: completion_rate
-        description: "Percentage of content viewed (0.0 to 1.0) (metric)"
-        tests:
-          - not_null
-          - dbt_utils.accepted_range:
-              min_value: 0
-              max_value: 1
-              
-      - name: is_completed_view
-        description: "Boolean indicator if content was viewed >= 90% (metric)"
-        tests:
-          - not_null
+- name: fct__viewings
+  description: |-
+    Fact table representing viewing events on the BigMedia VoD platform.
+
+    Each row represents a unique viewing session with metrics and foreign keys
+    to all dimension tables. This is the central table of the star schema.
+
+    Grain: One row per viewing session per user per content.
+
+    ## Data Model Diagram
+
+    [View interactive diagram](dbt/assets/img/mart/core/fct__viewings/fct__viewings_model.html)
+
+  columns:
+  - name: viewing_sk
+    description: "Surrogate key for viewing event (primary key)"
+    tests:
+    - unique
+    - not_null
+
+  - name: user_fk
+    description: "Foreign key to dim__users dimension"
+    tests:
+    - not_null
+    - relationships:
+        to: ref('dim__users')
+        field: user_sk
+
+  - name: content_fk
+    description: "Foreign key to dim_content dimension"
+    tests:
+    - not_null
+    - relationships:
+        to: ref('dim__content')
+        field: content_sk
+
+  - name: date_fk
+    description: "Foreign key to dim_date dimension (format YYYYMMDD)"
+    tests:
+    - not_null
+    - relationships:
+        to: ref('dim__date')
+        field: date_sk
+
+  - name: device_fk
+    description: "Foreign key to dim_devices dimension"
+    tests:
+    - not_null
+    - relationships:
+        to: ref('dim__devices')
+        field: device_sk
+
+  - name: view_duration_minutes
+    description: "Viewing duration in minutes (metric)"
+    tests:
+    - not_null
+
+  - name: completion_rate
+    description: "Percentage of content viewed (0.0 to 1.0) (metric)"
+    tests:
+    - not_null
+    - dbt_utils.accepted_range:
+        min_value: 0
+        max_value: 1
+
+  - name: is_completed_view
+    description: "Boolean indicator if content was viewed >= 90% (metric)"
+    tests:
+    - not_null
 

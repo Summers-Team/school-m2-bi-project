@@ -13,4 +13,5 @@ dependencies = [
     "prefect-gcp>=0.6.10",
     "pyyaml>=6.0.3",
     "faker>=37.11.0",
+    "dbt-model-erd>=0.1.1",
 ]

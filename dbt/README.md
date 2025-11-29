@@ -6,6 +6,14 @@ Try running the following commands:
 - dbt run
 - dbt test
 
+## Generating Entity Relationship Diagrams
+
+To generate Mermaid UML diagrams for your dbt models:
+
+```bash
+cd dbt
+python -m dbt_erd --model-path models/mart --config erd_config.yml
+```
 
 ### Resources:
 - Learn more about dbt [in the docs](https://docs.getdbt.com/docs/introduction)

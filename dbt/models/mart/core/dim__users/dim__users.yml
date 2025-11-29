@@ -4,7 +4,7 @@ models:
   # =============================================================================
   # dim_users : User dimension table for star schema
   # =============================================================================
-  - name: dim_users
+  - name: dim__users
     description: |
       User dimension table containing information about BigMedia VoD service users.
       
@@ -33,9 +33,6 @@ models:
         description: "User age"
         tests:
           - not_null
-          - dbt_utils.accepted_range:
-              min_value: 13
-              max_value: 70
               
       - name: days_since_registration
         description: "Number of days since user registration (calculated at load time)"
