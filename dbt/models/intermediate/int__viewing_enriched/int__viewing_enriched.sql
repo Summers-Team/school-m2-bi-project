@@ -21,6 +21,7 @@ enriched AS (
         vl.session_id,
         vl.user_id,
         vl.content_id,
+        {{ dbt_utils.generate_surrogate_key(['c.series_name']) }} AS series_sk,
         
         -- Viewing metrics
         vl.watch_duration_seconds,
