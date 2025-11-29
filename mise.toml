@@ -23,7 +23,6 @@ PREFECT_PROFILES_PATH = { value = "profiles.toml" }
 GCLOUD_SA_DBT_ID = { value = "dbt-sa" }
 
 
-
 [settings]
 python.uv_venv_auto = true
 
@@ -39,7 +38,7 @@ usage = '''
 flag "--enabled-gcp-backend-config" help="Enable GCP backend configuration during init" negate="--disable-gcp-backend-config" default=#true
 flag "--prefix <prefix>" help="Prefix for the Terraform state in the GCS bucket" default="terraform/state"
 '''
-env = { GCLOUD_PROJECT = { required = true }, TERRAFORM_STATE_BUCKET = { value = "{{ env.GCLOUD_PROJECT }}-tfstate"} }
+env = { GCLOUD_PROJECT = { required = true }, TERRAFORM_STATE_BUCKET = { value = "{{ env.GCLOUD_PROJECT }}-tfstate" } }
 run = '''
 set -euo pipefail
 
@@ -56,7 +55,7 @@ fi
 description = "Run 'opentofu plan' in the infrastructure directory."
 sources = ["infrastructure/**/*.tfvars"]
 depends = ["infra:init", "infra:provide_backend"]
-env = {TF_VAR_region = { value = "{{ env.GCLOUD_REGION }}" }, TF_VAR_project_id = { value = "{{ env.GCLOUD_PROJECT }}" }, TF_VAR_sa_dbt_id = { value = "{{ env.GCLOUD_SA_DBT_ID }}" }}
+env = { TF_VAR_region = { value = "{{ env.GCLOUD_REGION }}" }, TF_VAR_project_id = { value = "{{ env.GCLOUD_PROJECT  }}" }, TF_VAR_sa_dbt_id = { value = "{{ env.GCLOUD_SA_DBT_ID }}" } }
 run = "tofu -chdir=infrastructure plan"
 
 [tasks."infra:outputs"]
@@ -122,7 +121,7 @@ fi
 [tasks."gcloud:provide_state_bucket"]
 description = "Create the GCS bucket for Terraform state if it does not exist."
 depends = "gcloud:auth"
-env = { GCLOUD_PROJECT = { required = true }, TERRAFORM_STATE_BUCKET = { value = "{{ env.GCLOUD_PROJECT }}-tfstate"} }
+env = { GCLOUD_PROJECT = { required = true }, TERRAFORM_STATE_BUCKET = { value = "{{ env.GCLOUD_PROJECT }}-tfstate" } }
 run = '''
 set -euo pipefail
 
@@ -150,7 +149,7 @@ flag "--email <email>" help="Service account email used to create the key" env="
 flag "--output <output>" help="Destination path for the JSON key" default=".secrets/sa_key.json"
 flag "--dry-run" help="Preview the gcloud command without creating the key"
 '''
-env ={ GCLOUD_SA_EMAIL = { value = "{{ env.GCLOUD_SA_DBT_ID }}-sa@{{ env.GCLOUD_PROJECT }}.iam.gserviceaccount.com" } }
+env = { GCLOUD_SA_EMAIL = { value = "{{ env.GCLOUD_SA_DBT_ID }}-sa@{{ env.GCLOUD_PROJECT }}.iam.gserviceaccount.com" } }
 run = '''
 set -euo pipefail
 
@@ -180,14 +179,14 @@ echo "Service account key written to ${OUTPUT_PATH}."
 description = "render dbt profiles.yml from template using environment variables."
 sources = ["dbt/profiles.tpl.yml"]
 outputs = ["dbt/profiles.yml"]
-depends = [ "infra:outputs" ]
+depends = ["infra:outputs"]
 run = "scripts/render_template dbt/profiles.tpl.yml"
 
 [tasks."prefect:render_configs"]
 description = "Render Prefect configuration files from templates using environment variables."
 sources = ["prefect.tpl.yml"]
 outputs = ["prefect.yml"]
-depends = [ "infra:outputs" ]
+depends = ["infra:outputs"]
 run = "scripts/render_template prefect.tpl.yml"
 
 [tasks."prefect:setup_blocks"]
