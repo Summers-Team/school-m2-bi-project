@@ -9,7 +9,7 @@ models:
       Series dimension table containing information about series available on BigMedia.
       
       This dimension is part of the star schema and will be joined to the fact table
-      fct_viewings via the content_fk foreign key.
+      fct_viewings via the series_fk foreign key.
       
     columns:
       - name: series_sk
