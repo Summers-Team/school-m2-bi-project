@@ -21,7 +21,7 @@ deployments:
           branch: "{{ prefect.variables.branch_name }}"
           repository: https://github.com/Bafbi/projet-m2-bi.git
       - prefect.deployments.steps.run_shell_script:
-          script: pip install uv && uv pip install --system -r requirements.txt
+          script: pip install uv && uv pip install -r requirements.txt
           directory: "{{ git-clone.directory }}"
 
     # flow-specific fields
@@ -52,7 +52,7 @@ deployments:
           branch: main
           repository: https://github.com/Bafbi/projet-m2-bi.git
       - prefect.deployments.steps.run_shell_script:
-          script: pip install uv && uv pip install --system -r requirements.txt
+          script: pip install uv && uv pip install -r requirements.txt
           directory: "{{ git-clone.directory }}"
 
     # flow-specific fields
@@ -82,7 +82,7 @@ deployments:
           branch: main
           repository: https://github.com/Bafbi/projet-m2-bi.git
       - prefect.deployments.steps.run_shell_script:
-          script: pip install uv && uv pip install --system -r requirements.txt
+          script: pip install uv && uv pip install -r requirements.txt
           directory: "{{ git-clone.directory }}"
 
     # flow-specific fields
