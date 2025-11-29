@@ -150,7 +150,7 @@ fi
 description = "Generate .secrets/sa_key.json for a given service account email."
 depends = "gcloud:auth"
 usage = '''
-flag "--email <email>" help="Service account email used to create the key" default="aa" env="GCLOUD_SA_EMAIL"
+flag "--email <email>" help="Service account email used to create the key" env="GCLOUD_SA_EMAIL"
 flag "--output <output>" help="Destination path for the JSON key" default=".secrets/sa_key.json"
 flag "--dry-run" help="Preview the gcloud command without creating the key"
 '''

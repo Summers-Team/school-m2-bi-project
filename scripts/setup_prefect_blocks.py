@@ -76,16 +76,6 @@ def resolve_target_context(target_name: str, cfg: Dict[str, Any]) -> Dict[str, A
 
     - Prefer environment variables (env.<UPPER>), then TF outputs under both raw and normalized keys.
     """
-    def norm(k: str) -> str:
-        k = k.lower()
-        for prefix in ("bq_", "project_", "gcp_", "google_"):
-            if k.startswith(prefix):
-                k = k[len(prefix):]
-        for suffix in ("_id", "_name", "_path"):
-            if k.endswith(suffix):
-                k = k[: -len(suffix)]
-        return k
-
     resolved = {}
     # Fields of interest
     for field in ("project", "dataset", "keyfile", "threads", "location"):
