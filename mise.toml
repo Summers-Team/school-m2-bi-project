@@ -21,13 +21,13 @@ run = "scripts/sync_env"
 # TF_LOG = { value = "DEBUG" }
 PREFECT_PROFILES_PATH = { value = "profiles.toml" }
 
-GCLOUD_SA_ID = { value = "{{get_env(name='GCLOUD_PROJECT', default='default')}}-sa" }
-TERRAFORM_STATE_BUCKET = { value = "{{get_env(name='GCLOUD_PROJECT', default='default')}}-tfstate" }
+GCLOUD_SA_DBT_ID = { value = "{{ GCLOUD_PROJECT }}-dbt-sa" }
+TERRAFORM_STATE_BUCKET = { value = "{{ GCLOUD_PROJECT }}-tfstate" }
 
-GCLOUD_SA_EMAIL = { value = "{{get_env(name='GCLOUD_PROJECT', default='default')}}-sa@{{get_env(name='GCLOUD_PROJECT', default='default')}}.iam.gserviceaccount.com" }
-TF_VAR_region = { value = "{{get_env(name='GCLOUD_REGION', default='default')}}" }
-TF_VAR_project_id = { value = "{{get_env(name='GCLOUD_PROJECT', default='default')}}" }
-TF_VAR_sa_generic_id = { value = "{{get_env(name='GCLOUD_SA_ID', default='default')}}" }
+GCLOUD_SA_EMAIL = { value = "{{ GCLOUD_SA_DBT_ID }}-sa@{{ GCLOUD_PROJECT }}.iam.gserviceaccount.com" }
+TF_VAR_region = { value = "{{ GCLOUD_REGION }}" }
+TF_VAR_project_id = { value = "{{ GCLOUD_PROJECT }}" }
+TF_VAR_sa_dbt_id = { value = "{{ GCLOUD_SA_DBT_ID }}" }
 
 [settings]
 python.uv_venv_auto = true
