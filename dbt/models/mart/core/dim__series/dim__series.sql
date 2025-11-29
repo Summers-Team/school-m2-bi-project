@@ -49,7 +49,6 @@ base_series_stats AS (
         series_name,
         genre,
         target_age_group,
-        production_type
 ),
 
 final AS (
