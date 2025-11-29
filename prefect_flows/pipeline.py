@@ -255,6 +255,8 @@ def dbt_full_pipeline(target: str = "dev"):
     }
 
 
+import argparse
+
 if __name__ == "__main__":
     """
     Point d'entrée pour l'exécution locale.
@@ -263,8 +265,19 @@ if __name__ == "__main__":
         # Environnement dev (par défaut)
         uv run python prefect_flows/pipeline.py
         
-        # Pour prod, modifiez l'appel ci-dessous ou utilisez Prefect CLI
+        # Pour prod
+        uv run python prefect_flows/pipeline.py --target prod
     """
-    # Exécution locale pour tester (environnement dev par défaut)
-    dbt_full_pipeline(target="dev")
+    parser = argparse.ArgumentParser(description="dbt pipeline flow")
+    # On supporte à la fois --target (standard dbt) et --env (pour cohérence avec refill_bucket)
+    parser.add_argument("--target", default="dev", help="dbt target (dev or prod)")
+    parser.add_argument("--env", help="Alias for --target")
+    
+    args = parser.parse_args()
+    
+    # Si --env est fourni, il prend la priorité (ou agit comme alias)
+    target = args.env if args.env else args.target
+
+    # Exécution locale
+    dbt_full_pipeline(target=target)
 
