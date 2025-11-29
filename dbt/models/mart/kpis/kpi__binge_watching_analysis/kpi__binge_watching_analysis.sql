@@ -15,23 +15,29 @@ dim_date AS (
     SELECT * FROM {{ ref('dim__date') }}
 ),
 
+dim_series AS (
+    SELECT * FROM {{ ref('dim__series') }}
+),
+
 user_viewing_sessions AS (
     SELECT
         fv.user_fk,
         fv.date_fk,
         dd.full_date,
-        dc.series_name,
+        ds.series_name,
         COUNT(DISTINCT fv.content_fk) AS episodes_watched
     FROM fct_viewings fv
     INNER JOIN dim_content dc
         ON fv.content_fk = dc.content_sk
     INNER JOIN dim_date dd
         ON fv.date_fk = dd.date_sk
+    INNER JOIN dim_series ds
+        ON fv.series_fk = ds.series_sk
     GROUP BY
         fv.user_fk,
         fv.date_fk,
         dd.full_date,
-        dc.series_name
+        ds.series_name
 ),
 
 binge_watchers AS (
@@ -45,10 +51,15 @@ binge_watchers AS (
 
 series_content_id AS (
     SELECT DISTINCT
-        series_name,
+        ds.series_name,
         ANY_VALUE(content_id) AS content_id
     FROM dim_content
-    GROUP BY series_name
+    INNER JOIN fct_viewings fv
+        ON dim_content.content_sk = fv.content_fk
+    INNER JOIN dim_series ds
+        ON fv.series_fk = ds.series_sk
+
+    GROUP BY ds.series_name
 )
 
 SELECT

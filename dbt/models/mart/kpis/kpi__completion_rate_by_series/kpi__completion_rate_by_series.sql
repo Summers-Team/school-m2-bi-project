@@ -10,11 +10,14 @@ WITH fct_viewings AS (
 dim_content AS (
     SELECT * FROM {{ ref('dim__content') }}
 ),
+dim_series AS (
+    SELECT * FROM {{ ref('dim__series') }}
+),
 
 completion_metrics AS (
     SELECT
-        dc.series_name,
-        dc.genre,
+        ds.series_name,
+        ds.genre,
         COUNT(*) AS total_views,
         AVG(fv.completion_rate) AS avg_completion_rate,
         SUM(CASE WHEN fv.is_completed_view THEN 1 ELSE 0 END) AS completed_views,
@@ -22,9 +25,11 @@ completion_metrics AS (
     FROM fct_viewings fv
     INNER JOIN dim_content dc
         ON fv.content_fk = dc.content_sk
+    INNER JOIN dim_series ds
+        ON fv.series_fk = ds.series_sk
     GROUP BY
-        dc.series_name,
-        dc.genre
+        ds.series_name,
+        ds.genre
 )
 
 SELECT
