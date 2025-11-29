@@ -12,22 +12,16 @@ run = "scripts/sync_env"
 
 [env]
 '_'.file = { path = ".env" }
+
+# Add git metadata to the environment
 '_'.source = { path = "scripts/get_git_env.sh" }
-# GCLOUD_PROJECT = { required = true }
-# GCLOUD_REGION = { required = true }
-# PREFECT_API_URL = { required = true }
-# PREFECT_API_KEY = { required = true }
 
 # TF_LOG = { value = "DEBUG" }
 PREFECT_PROFILES_PATH = { value = "profiles.toml" }
 
-GCLOUD_SA_DBT_ID = { value = "{{ GCLOUD_PROJECT }}-dbt-sa" }
-TERRAFORM_STATE_BUCKET = { value = "{{ GCLOUD_PROJECT }}-tfstate" }
+GCLOUD_SA_DBT_ID = { value = "dbt-sa" }
 
-GCLOUD_SA_EMAIL = { value = "{{ GCLOUD_SA_DBT_ID }}-sa@{{ GCLOUD_PROJECT }}.iam.gserviceaccount.com" }
-TF_VAR_region = { value = "{{ GCLOUD_REGION }}" }
-TF_VAR_project_id = { value = "{{ GCLOUD_PROJECT }}" }
-TF_VAR_sa_dbt_id = { value = "{{ GCLOUD_SA_DBT_ID }}" }
+
 
 [settings]
 python.uv_venv_auto = true
@@ -44,7 +38,7 @@ usage = '''
 flag "--enabled-gcp-backend-config" help="Enable GCP backend configuration during init" negate="--disable-gcp-backend-config" default=#true
 flag "--prefix <prefix>" help="Prefix for the Terraform state in the GCS bucket" default="terraform/state"
 '''
-env = { TERRAFORM_STATE_BUCKET = { required = true }, GCLOUD_PROJECT = { required = true } }
+env = { TERRAFORM_STATE_BUCKET = { value = "{{ GCLOUD_PROJECT }}-tfstate"}, GCLOUD_PROJECT = { required = true } }
 run = '''
 set -euo pipefail
 
@@ -61,6 +55,7 @@ fi
 description = "Run 'opentofu plan' in the infrastructure directory."
 sources = ["infrastructure/**/*.tfvars"]
 depends = ["infra:init", "infra:provide_backend"]
+env = {TF_VAR_region = { value = "{{ GCLOUD_REGION }}" }, TF_VAR_project_id = { value = "{{ GCLOUD_PROJECT }}" }, TF_VAR_sa_dbt_id = { value = "{{ GCLOUD_SA_DBT_ID }}" }}
 run = "tofu -chdir=infrastructure plan"
 
 [tasks."infra:outputs"]
@@ -126,7 +121,7 @@ fi
 [tasks."gcloud:provide_state_bucket"]
 description = "Create the GCS bucket for Terraform state if it does not exist."
 depends = "gcloud:auth"
-env = { GCLOUD_PROJECT = { required = true }, TERRAFORM_STATE_BUCKET = { required = true } }
+env = { GCLOUD_PROJECT = { required = true }, TERRAFORM_STATE_BUCKET = { value = "{{ GCLOUD_PROJECT }}-tfstate"} }
 run = '''
 set -euo pipefail
 
@@ -154,6 +149,7 @@ flag "--email <email>" help="Service account email used to create the key" env="
 flag "--output <output>" help="Destination path for the JSON key" default=".secrets/sa_key.json"
 flag "--dry-run" help="Preview the gcloud command without creating the key"
 '''
+env ={ GCLOUD_SA_EMAIL = { value = "{{ GCLOUD_SA_DBT_ID }}-sa@{{ GCLOUD_PROJECT }}.iam.gserviceaccount.com" } }
 run = '''
 set -euo pipefail
 
