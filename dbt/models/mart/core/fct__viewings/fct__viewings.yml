@@ -15,7 +15,7 @@ models:
 
     ## Data Model Diagram
 
-    [View interactive diagram](/assets/img/mart/core/fct__viewings/fct__viewings_model.html)
+    [View interactive diagram](dbt/assets/img/mart/core/fct__viewings/fct__viewings_model.html)
 
   columns:
   - name: viewing_sk
