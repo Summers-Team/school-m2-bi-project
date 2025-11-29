@@ -1,0 +1,98 @@
+# generic metadata
+prefect-version: null
+name: null
+
+# preparation steps
+build: null
+push: null
+
+# deployment configurations
+deployments:
+  - name: pipeline-dev
+    version: null
+    tags: ["dbt", "test"]
+    description: "Test dbt debug flow"
+    schedule: null
+
+    # Runtime steps for DEV: clone dynamic branch
+    pull:
+      - prefect.deployments.steps.git_clone:
+          id: git-clone
+          branch: "{{ prefect.variables.branch_name }}"
+          repository: https://github.com/Bafbi/projet-m2-bi.git
+      - prefect.deployments.steps.run_shell_script:
+          script: uv pip install -r requirements.txt
+          directory: "{{ git-clone.directory }}"
+
+    # flow-specific fields
+    entrypoint: prefect_flows/pipeline.py:dbt_full_pipeline
+    parameters: {target: dev}
+
+    # infra-specific fields
+    work_pool:
+      name: default-work-pool
+      work_queue_name: default
+      job_variables:
+        env:
+          PREFECT_CLOUD_API_URL: "https://api.prefect.cloud/api/accounts/5b70ef3b-f84d-4d7b-b424-543bb43209bd/workspaces/870a72e9-73a9-492c-972e-c176dc07a574"
+        image: "prefecthq/prefect-client:3-python3.12"
+
+  - name: pipeline-prod
+    version: null
+    tags: ["dbt", "prod"]
+    description: "Pipeline dbt complet pour prod"
+    schedule:
+      cron: "0 6 * * *"
+      timezone: "Europe/Paris"
+
+    # Runtime steps for PROD: always clone main
+    pull:
+      - prefect.deployments.steps.git_clone:
+          id: git-clone
+          branch: main
+          repository: https://github.com/Bafbi/projet-m2-bi.git
+      - prefect.deployments.steps.run_shell_script:
+          script: uv pip install -r requirements.txt
+          directory: "{{ git-clone.directory }}"
+
+    # flow-specific fields
+    entrypoint: prefect_flows/pipeline.py:dbt_full_pipeline
+    parameters: {target: prod}
+
+    work_pool:
+      name: default-work-pool
+      work_queue_name: default
+      job_variables:
+        env:
+          PREFECT_CLOUD_API_URL: "https://api.prefect.cloud/api/accounts/5b70ef3b-f84d-4d7b-b424-543bb43209bd/workspaces/870a72e9-73a9-492c-972e-c176dc07a574"
+        image: "prefecthq/prefect-client:3-python3.12"
+
+  - name: refill-bucket-prod
+    version: null
+    tags: ["ingestion", "prod"]
+    description: "Ingestion quotidienne des données brutes (Prod)"
+    schedule:
+      cron: "0 5 * * *"
+      timezone: "Europe/Paris"
+
+    # Runtime steps for PROD ingestion: always clone main
+    pull:
+      - prefect.deployments.steps.git_clone:
+          id: git-clone
+          branch: main
+          repository: https://github.com/Bafbi/projet-m2-bi.git
+      - prefect.deployments.steps.run_shell_script:
+          script: uv pip install -r requirements.txt
+          directory: "{{ git-clone.directory }}"
+
+    # flow-specific fields
+    entrypoint: prefect_flows/refill_bucket.py:refill_bucket_flow
+    parameters: {env: prod}
+
+    work_pool:
+      name: default-work-pool
+      work_queue_name: default
+      job_variables:
+        env:
+          PREFECT_CLOUD_API_URL: "https://api.prefect.cloud/api/accounts/5b70ef3b-f84d-4d7b-b424-543bb43209bd/workspaces/870a72e9-73a9-492c-972e-c176dc07a574"
+        image: "prefecthq/prefect-client:3-python3.12"
