@@ -44,6 +44,13 @@ models:
               to: ref('dim__series')
               field: series_sk
               
+      - name: date_fk
+        description: "Foreign key to dim_date dimension (format YYYYMMDD)"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim__date')
+              field: date_sk
       
       - name: device_fk
         description: "Foreign key to dim_devices dimension"
