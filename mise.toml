@@ -193,25 +193,25 @@ echo "Service account key written to ${OUTPUT_PATH}."
 
 [tasks."dbt:render_profiles"]
 description = "render dbt profiles.yml from template using environment variables."
-sources = ["dbt/profiles.tpl.yml"]
+sources = ["dbt/profiles.tpl.yml", "scripts/render_template"]
 outputs = ["dbt/profiles.yml"]
 depends = ["infra:outputs"]
 run = "scripts/render_template dbt/profiles.tpl.yml"
 
 [tasks."prefect:render_configs"]
 description = "Render Prefect configuration files from templates using environment variables."
-sources = ["prefect.tpl.yml"]
+sources = ["prefect.tpl.yml", "scripts/render_template"]
 outputs = ["prefect.yml"]
 depends = ["infra:outputs"]
 run = "scripts/render_template prefect.tpl.yml"
 
 [tasks."prefect:setup_blocks"]
 description = "Create Prefect blocks (GCP credentials, BigQuery target configs, and DBT profiles) from the rendered dbt/profiles.yml"
-sources = ["dbt/profiles.yml"]
+sources = ["dbt/profiles.yml", "scripts/setup_prefect_blocks.py", ".secrets/sa_key.json"]
 depends = ["dbt:render_profiles", "gcloud:create_sa_key"]
 usage = '''
 flag "--service-account <path>" help="Path to service account JSON (default: .secrets/sa_key.json)" default=".secrets/sa_key.json"
-flag "--save" help="Actually save Prefect blocks" negate="--no-save" default=#false
+flag "--save" help="Actually save Prefect blocks" negate="--no-save" default=#true
 flag "--overwrite" help="Overwrite existing blocks" negate="--no-overwrite" default=#false
 flag "--no-verify" help="Skip verification step after saving blocks" negate="--verify" default=#false
 flag "--targets" help="Limit the targets to configure (space separated)" default="" 
