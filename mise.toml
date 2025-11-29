@@ -28,6 +28,10 @@ GCLOUD_SA_DBT_ID = { value = "dbt-sa" }
 [settings]
 python.uv_venv_auto = true
 
+[tasks.setup]
+description = "Set up the development environment."
+depends = ["lock_requirements", "infra:apply", "dbt:render_profiles", "prefect:render_configs", "prefect:setup_blocks"]
+
 [tasks.lock_requirements]
 description = "Lock Python dependencies into requirements.txt using pip-compile."
 run = "uv pip compile pyproject.toml -o requirements.txt"
@@ -46,6 +50,7 @@ set -euo pipefail
 
 if [ "${usage_enabled_gcp_backend_config?}" = "true" ]; then
     echo "Running 'opentofu init' with GCP backend configuration..."
+    echo "Using bucket: ${TERRAFORM_STATE_BUCKET}, prefix: ${usage_prefix?}"
     tofu -chdir=infrastructure init -backend-config="bucket=${TERRAFORM_STATE_BUCKET}" -backend-config="prefix=${usage_prefix?}"
 else
     echo "Running 'opentofu init' without GCP backend configuration..."
@@ -56,7 +61,7 @@ fi
 [tasks."infra:plan"]
 description = "Run 'opentofu plan' in the infrastructure directory."
 sources = ["infrastructure/**/*.tfvars"]
-depends = ["infra:init", "infra:provide_backend"]
+depends = ["infra:init"]
 env = { TF_VAR_region = { value = "{{ env.GCLOUD_REGION }}" }, TF_VAR_project_id = { value = "{{ env.GCLOUD_PROJECT  }}" }, TF_VAR_sa_dbt_id = { value = "{{ env.GCLOUD_SA_DBT_ID }}" } }
 run = "tofu -chdir=infrastructure plan"
 
@@ -64,6 +69,7 @@ run = "tofu -chdir=infrastructure plan"
 description = "Run 'opentofu apply' in the infrastructure directory."
 depends = ["infra:plan"]
 depends_post = ["infra:outputs"]
+sources = ["infrastructure/**/*.tfvars"]
 usage = '''
 flag "--auto-approve" help="Skip interactive approval prompt" negate="--no-auto-approve" default=#true
 '''
@@ -73,6 +79,7 @@ run = "tofu -chdir=infrastructure apply ${usage_auto_approve:+-auto-approve}"
 [tasks."infra:outputs"]
 description = "Export Terraform/OpenTofu outputs to a JSON file."
 depends = ["infra:init"]
+sources = ["infrastructure/**/*.tfvars"]
 usage = '''
 flag "--file <file>" help="Path to write the JSON outputs" default="infrastructure/terraform-outputs.json"
 '''
@@ -106,11 +113,6 @@ run = './scripts/sync_env'
 [tasks."infra:provide_backend"]
 description = "Provision the backend infrastructure required for OpenTofu state storage."
 depends = ["gcloud:provide_state_bucket"]
-run = '''
-set -euo pipefail
-
-echo "Backend prerequisites satisfied."
-'''
 
 [tasks."gcloud:auth"]
 description = "Ensure ADC and CLI are authenticated without modifying global config."
@@ -132,7 +134,7 @@ fi
 
 [tasks."gcloud:provide_state_bucket"]
 description = "Create the GCS bucket for Terraform state if it does not exist."
-depends = "gcloud:auth"
+depends = ["gcloud:auth"]
 env = { GCLOUD_PROJECT = { required = true }, TERRAFORM_STATE_BUCKET = { value = "{{ env.GCLOUD_PROJECT }}-tfstate" } }
 run = '''
 set -euo pipefail
@@ -155,13 +157,13 @@ fi
 
 [tasks."gcloud:create_sa_key"]
 description = "Generate .secrets/sa_key.json for a given service account email."
-depends = "gcloud:auth"
+depends = ["gcloud:auth"]
 usage = '''
 flag "--email <email>" help="Service account email used to create the key" env="GCLOUD_SA_EMAIL"
 flag "--output <output>" help="Destination path for the JSON key" default=".secrets/sa_key.json"
 flag "--dry-run" help="Preview the gcloud command without creating the key"
 '''
-env = { GCLOUD_SA_EMAIL = { value = "{{ env.GCLOUD_SA_DBT_ID }}-sa@{{ env.GCLOUD_PROJECT }}.iam.gserviceaccount.com" } }
+env = { GCLOUD_SA_EMAIL = { value = "{{ env.GCLOUD_SA_DBT_ID }}@{{ env.GCLOUD_PROJECT }}.iam.gserviceaccount.com" } }
 run = '''
 set -euo pipefail
 
