@@ -5,6 +5,7 @@ uv = 'latest'
 
 [hooks]
 enter = ["scripts/sync_env"]
+postinstall = ["scripts/sync_env"]
 
 [[watch_files]]
 patterns = [".env.example"]
@@ -38,7 +39,7 @@ usage = '''
 flag "--enabled-gcp-backend-config" help="Enable GCP backend configuration during init" negate="--disable-gcp-backend-config" default=#true
 flag "--prefix <prefix>" help="Prefix for the Terraform state in the GCS bucket" default="terraform/state"
 '''
-env = { TERRAFORM_STATE_BUCKET = { value = "{{ GCLOUD_PROJECT }}-tfstate"}, GCLOUD_PROJECT = { required = true } }
+env = { GCLOUD_PROJECT = { required = true }, TERRAFORM_STATE_BUCKET = { value = "{{ env.GCLOUD_PROJECT }}-tfstate"} }
 run = '''
 set -euo pipefail
 
@@ -55,7 +56,7 @@ fi
 description = "Run 'opentofu plan' in the infrastructure directory."
 sources = ["infrastructure/**/*.tfvars"]
 depends = ["infra:init", "infra:provide_backend"]
-env = {TF_VAR_region = { value = "{{ GCLOUD_REGION }}" }, TF_VAR_project_id = { value = "{{ GCLOUD_PROJECT }}" }, TF_VAR_sa_dbt_id = { value = "{{ GCLOUD_SA_DBT_ID }}" }}
+env = {TF_VAR_region = { value = "{{ env.GCLOUD_REGION }}" }, TF_VAR_project_id = { value = "{{ env.GCLOUD_PROJECT }}" }, TF_VAR_sa_dbt_id = { value = "{{ env.GCLOUD_SA_DBT_ID }}" }}
 run = "tofu -chdir=infrastructure plan"
 
 [tasks."infra:outputs"]
@@ -121,7 +122,7 @@ fi
 [tasks."gcloud:provide_state_bucket"]
 description = "Create the GCS bucket for Terraform state if it does not exist."
 depends = "gcloud:auth"
-env = { GCLOUD_PROJECT = { required = true }, TERRAFORM_STATE_BUCKET = { value = "{{ GCLOUD_PROJECT }}-tfstate"} }
+env = { GCLOUD_PROJECT = { required = true }, TERRAFORM_STATE_BUCKET = { value = "{{ env.GCLOUD_PROJECT }}-tfstate"} }
 run = '''
 set -euo pipefail
 
@@ -149,7 +150,7 @@ flag "--email <email>" help="Service account email used to create the key" env="
 flag "--output <output>" help="Destination path for the JSON key" default=".secrets/sa_key.json"
 flag "--dry-run" help="Preview the gcloud command without creating the key"
 '''
-env ={ GCLOUD_SA_EMAIL = { value = "{{ GCLOUD_SA_DBT_ID }}-sa@{{ GCLOUD_PROJECT }}.iam.gserviceaccount.com" } }
+env ={ GCLOUD_SA_EMAIL = { value = "{{ env.GCLOUD_SA_DBT_ID }}-sa@{{ env.GCLOUD_PROJECT }}.iam.gserviceaccount.com" } }
 run = '''
 set -euo pipefail
 
