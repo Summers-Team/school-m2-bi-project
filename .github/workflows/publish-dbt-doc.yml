@@ -92,8 +92,11 @@ jobs:
           cp dbt/target/manifest.json public/
           cp dbt/target/catalog.json public/
           cp dbt/target/graph.gpickle public/ 2>/dev/null || true
-          cp dbt/assets/img/mart/core/fct__viewings/fct__viewings_model.html public/
-          cp dbt/assets/img/mart/core/fct__viewings/fct__viewings_model.mmd public/
+          
+          # Create directory structure for assets to match the relative links
+          mkdir -p public/dbt/assets/img/mart/core/fct__viewings/
+          cp dbt/assets/img/mart/core/fct__viewings/fct__viewings_model.html public/dbt/assets/img/mart/core/fct__viewings/
+          cp dbt/assets/img/mart/core/fct__viewings/fct__viewings_model.mmd public/dbt/assets/img/mart/core/fct__viewings/
       
       - name: Setup Pages
         uses: actions/configure-pages@v4
