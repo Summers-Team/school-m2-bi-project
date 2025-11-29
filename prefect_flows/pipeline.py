@@ -27,6 +27,7 @@ def run_dbt_models(target: str = "dev"):
                (ex: 'dbt-operation-run-{target}' ou 'dbt-core-operation-{target}').
       - Local: fallback sur le profiles.yml local (dbt/profiles.yml).
     Pour générer le profiles.yml local: uv run python -m infrastructure.setup_profiles --local-only
+    Pour générer les blocs Prefect (cloud): uv run python -m infrastructure.setup_profiles --blocks-only
     
     Args:
         target: Environnement cible (dev ou prod). Correspond au target dans profiles.yml
@@ -60,7 +61,7 @@ def run_dbt_models(target: str = "dev"):
         logger.info(f"☁️  Exécution via le profil Prefect reconstruit pour {target}")
         result = DbtCoreOperation(
             project_dir=project_dir,
-            commands=["dbt run"],
+            commands=["dbt run --threads 4"],
             dbt_cli_profile=profile,
             overwrite_profiles=True,
         ).run()
@@ -202,7 +203,7 @@ def test_dbt_models(target: str = "dev"):
     return result
 
 
-@flow(name="pipeline-dbt-complet", log_prints=True)
+@flow(name="dbt_full_pipeline", log_prints=True)
 def dbt_full_pipeline(target: str = "dev"):
     """
     Pipeline complète dbt : run + test

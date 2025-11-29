@@ -1,0 +1,65 @@
+version: 2
+
+models:
+  # =============================================================================
+  # dim_date : Date dimension table for star schema
+  # =============================================================================
+  - name: dim__date
+    description: |
+      Date dimension table for temporal analysis in the star schema.
+      
+      This dimension contains all dates from 2020-01-01 to 2030-12-31 with
+      pre-calculated attributes for efficient time-based analysis.
+      
+      This dimension is part of the star schema and will be joined to the fact table
+      fct_viewings via the date_fk foreign key.
+      
+    columns:
+      - name: date_sk
+        description: "Surrogate key for date dimension (primary key) - format YYYYMMDD"
+        tests:
+          - unique
+          - not_null
+          
+      - name: full_date
+        description: "Full date (DATE type)"
+        tests:
+          - unique
+          - not_null
+          
+      - name: year
+        description: "Year (integer)"
+        tests:
+          - not_null
+          
+      - name: quarter
+        description: "Quarter of the year (1-4)"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 1
+              max_value: 4
+              
+      - name: month
+        description: "Month of the year (1-12)"
+        tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: 1
+              max_value: 12
+
+      - name: week_number
+        description: "Week number in the year"
+        tests:
+          - not_null
+              
+      - name: day_of_week
+        description: "Day of the week name (e.g., Monday, Tuesday)"
+        tests:
+          - not_null
+          
+      - name: is_weekend
+        description: "Boolean indicating if the date is a weekend (Saturday or Sunday)"
+        tests:
+          - not_null
+

@@ -1,0 +1,71 @@
+version: 2
+
+models:
+  # =============================================================================
+  # base_social_media : Cleaned and deduplicated social media mentions
+  # =============================================================================
+  - name: base_social_media
+    description: |
+      Social media mentions cleaned and deduplicated (base layer).
+      
+      This table contains posts/comments collected on social media
+      platforms regarding BigMedia content. It serves as a base for intermediate
+      models (int_) that will calculate total engagement and sentiment analysis.
+      
+      Data quality transformations applied:
+      - TRIM on text fields
+      - CAST to INT64 for engagement metrics
+      - Deduplication by mention_id (keeps most recent publication timestamp)
+      
+    columns:
+      - name: mention_id
+        description: "Unique mention identifier (primary key)"
+        tests:
+          - unique
+          - not_null
+          
+      - name: content_title_mentioned
+        description: "Title of mentioned content (for matching with base_contents.title)"
+        tests:
+          - not_null
+
+      - name: content_id
+        description: "Unique content identifier (for matching with base_contents.content_id)"
+        tests:
+          - not_null
+          
+      - name: platform
+        description: "Source platform of the mention"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Twitter', 'Facebook', 'TikTok', 'Instagram']
+              
+      - name: author_id
+        description: "Anonymized identifier of the post author"
+        tests:
+          - not_null
+          
+      - name: mention_text
+        description: "Raw text of the comment/post"
+        tests:
+          - not_null
+          
+      - name: likes_count
+        description: "Number of likes/reactions on the post"
+        tests:
+          - not_null
+          
+      - name: shares_count
+        description: "Number of shares/retweets of the post"
+        tests:
+          - not_null
+          
+      - name: publication_timestamp
+        description: "Post publication timestamp"
+        tests:
+          - not_null
+          
+      - name: _loaded_at
+        description: "Timestamp of loading into the base layer"
+

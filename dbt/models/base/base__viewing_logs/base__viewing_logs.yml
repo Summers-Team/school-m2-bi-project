@@ -1,0 +1,69 @@
+version: 2
+
+models:
+  # =============================================================================
+  # base_viewing_logs : Cleaned and deduplicated viewing logs
+  # =============================================================================
+  - name: base_viewing_logs
+    description: |
+      Detailed viewing logs cleaned, validated, and deduplicated.
+      
+      This table represents the core of transactional data. Each row
+      is a unique viewing event on the platform.
+      
+      Data quality transformations applied:
+      - TRIM on text fields
+      - LOWER normalization for device_type and os
+      - CAST to INT64 for watch_duration_seconds
+      - Deduplication by session_id (keeps most recent start timestamp)
+      
+    columns:
+      - name: session_id
+        description: "Unique viewing session identifier (primary key)"
+        tests:
+          - unique
+          - not_null
+          
+      - name: user_id
+        description: "User identifier (foreign key to base_users)"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('base_users')
+              field: user_id
+              
+      - name: content_id
+        description: "Viewed content identifier (foreign key to base_contents)"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('base_contents')
+              field: content_id
+              
+      - name: start_timestamp
+        description: "Viewing start timestamp"
+        tests:
+          - not_null
+          
+      - name: end_timestamp
+        description: "Viewing end timestamp"
+        tests:
+          - not_null
+          
+      - name: watch_duration_seconds
+        description: "Actual viewing duration in seconds"
+        tests:
+          - not_null
+          
+      - name: device_type
+        description: "Device type used for viewing"
+        tests:
+          - not_null
+          
+      - name: os
+        description: "Device operating system"
+        tests:
+          - not_null
+          
+      - name: _loaded_at
+        description: "Timestamp of loading into the base layer"

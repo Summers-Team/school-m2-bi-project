@@ -1,0 +1,112 @@
+name: Deploy dbt doc to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Empêche plusieurs déploiements simultanés
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+      
+      - name: Install dependencies
+        run: uv sync
+      
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.DBT_SERVICE_ACCOUNT_JSON }}
+          create_credentials_file: true
+          cleanup_credentials: true
+      
+      - name: Configure dbt profiles
+        run: |
+          cd dbt
+          # Extract profile name from dbt_project.yml using Python (available from previous step)
+          DBT_PROFILE=$(uv run python -c "import yaml; print(yaml.safe_load(open('dbt_project.yml'))['profile'])")
+          
+          cat > profiles.yml <<EOF
+          $DBT_PROFILE:
+            target: dev
+            outputs:
+              dev:
+                type: bigquery
+                method: service-account
+                project: ${{ secrets.GCP_PROJECT_ID }}
+                dataset: ${{ secrets.GCP_DEV_DATASET }}
+                keyfile: ${{ steps.auth.outputs.credentials_file_path }}
+                threads: 4
+                location: ${{ secrets.GCP_REGION }}
+              prod:
+                type: bigquery
+                method: service-account
+                project: ${{ secrets.GCP_PROJECT_ID }}
+                dataset: ${{ secrets.GCP_PROD_DATASET }}
+                keyfile: ${{ steps.auth.outputs.credentials_file_path }}
+                threads: 8
+                location: ${{ secrets.GCP_REGION }}
+          EOF
+      
+      - name: Install dbt packages
+        run: |
+          cd dbt
+          uv run dbt deps
+      
+      - name: Generate dbt documentation
+        run: |
+          cd dbt
+          uv run dbt compile --profiles-dir . --target dev
+          uv run dbt docs generate --profiles-dir . --target dev
+          uv run python -m dbt_erd --model-path models --config erd_config.yml
+      
+      - name: Prepare documentation for GitHub Pages
+        run: |
+          mkdir -p public
+          cp dbt/target/index.html public/
+          cp dbt/target/manifest.json public/
+          cp dbt/target/catalog.json public/
+          cp dbt/target/graph.gpickle public/ 2>/dev/null || true
+          
+          # Create directory structure for assets to match the relative links
+          mkdir -p public/dbt/assets/img/mart/core/fct__viewings/
+          cp dbt/assets/img/mart/core/fct__viewings/fct__viewings_model.html public/dbt/assets/img/mart/core/fct__viewings/
+          cp dbt/assets/img/mart/core/fct__viewings/fct__viewings_model.mmd public/dbt/assets/img/mart/core/fct__viewings/
+      
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+      
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'public'
+      
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+

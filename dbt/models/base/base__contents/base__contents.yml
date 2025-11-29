@@ -1,0 +1,80 @@
+version: 2
+
+models:
+  # =============================================================================
+  # base_contents : Cleaned and deduplicated content catalog
+  # =============================================================================
+  - name: base_contents
+    description: |
+      Content catalog (series, episodes) cleaned, standardized, and deduplicated.
+      
+      This table contains all programs available on the BigMedia platform.
+      It serves as a reference for dimensions and performance analysis.
+      
+      Data quality transformations applied:
+      - TRIM on text fields
+      - CAST to INT64 for numeric fields
+      - Deduplication by content_id (keeps most recent release date)
+      
+    columns:
+      - name: content_id
+        description: "Unique content identifier (primary key)"
+        tests:
+          - unique
+          - not_null
+          
+      - name: title
+        description: "Full title of the episode or movie"
+        tests:
+          - not_null
+          
+      - name: series_name
+        description: "Parent series name"
+        tests:
+          - not_null
+          
+      - name: season_number
+        description: "Season number (1, 2, 3...)"
+        tests:
+          - not_null
+          
+      - name: episode_number
+        description: "Episode number within the season"
+        tests:
+          - not_null
+          
+      - name: genre
+        description: "Main content genre"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Action', 'Aventure', 'Comédie', 'Éducatif', 'Science-Fiction', 'Fantaisie', 'Documentaire']
+              
+      - name: target_age_group
+        description: "Target age group for the content"
+        tests:
+          - not_null
+                  
+      - name: production_type
+        description: "Production type (Original BigMedia or External Purchase)"
+        tests:
+          - not_null
+              
+      - name: release_date
+        description: "First release date of the content"
+        tests:
+          - not_null
+          
+      - name: duration_minutes
+        description: "Content duration in minutes"
+        tests:
+          - not_null
+
+      - name: production_cost_euros
+        description: "Production cost in euros"
+        tests:
+          - not_null
+          
+      - name: _loaded_at
+        description: "Timestamp of loading into the base layer"
+

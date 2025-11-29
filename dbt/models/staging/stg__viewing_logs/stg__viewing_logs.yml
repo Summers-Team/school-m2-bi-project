@@ -1,0 +1,58 @@
+models:
+  # =============================================================================
+  # stg_viewing_logs : Logs de visionnage nettoyés
+  # =============================================================================
+  - name: stg_viewing_logs
+    description: |
+      Logs de visionnage détaillés nettoyés et validés.
+      
+      Cette table représente le cœur des données transactionnelles. Chaque ligne
+      est un événement de visionnage unique sur la plateforme.
+      
+    columns:
+      - name: session_id
+        description: "Identifiant unique de la session de visionnage (clé primaire)"
+        tests:
+          - unique
+          - not_null
+          
+      - name: user_id
+        description: "Identifiant de l'utilisateur (clé étrangère vers stg_users)"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_users')
+              field: user_id
+              
+      - name: content_id
+        description: "Identifiant du contenu visionné (clé étrangère vers stg_contents)"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_contents')
+              field: content_id
+              
+      - name: start_timestamp
+        description: "Timestamp de début du visionnage"
+        tests:
+          - not_null
+          
+      - name: end_timestamp
+        description: "Timestamp de fin du visionnage"
+        tests:
+          - not_null
+          
+      - name: watch_duration_seconds
+        description: "Durée réelle de visionnage en secondes"
+        tests:
+          - not_null
+          
+      - name: device_type
+        description: "Type d'appareil utilisé pour le visionnage"
+        tests:
+          - not_null
+          
+      - name: os
+        description: "Système d'exploitation de l'appareil"
+        tests:
+          - not_null

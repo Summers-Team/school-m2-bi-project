@@ -10,17 +10,21 @@ variable "region" {
 }
 
 
+variable "ingested_data_bucket" {
+  description = "GCS bucket name for ingested data"
+  type        = string
+}
 
 variable "dev_suffix" {
   description = "Suffix for BigQuery dataset ID for dev"
   type        = string
-  default     = "bi_dataset_dev"
+  default     = "bi_dataset_dev_id"
 }
 
 variable "prod_suffix" {
   description = "Suffix for BigQuery dataset ID for prod"
   type        = string
-  default     = "bi_dataset_prod"
+  default     = "bi_dataset_prod_id"
 }
 
 variable "sa_dbt_id" {

@@ -1,0 +1,62 @@
+models:
+
+  # =============================================================================
+  # stg_social_media_mentions : Mentions réseaux sociaux enrichies
+  # =============================================================================
+  - name: stg_social_media_mentions
+    description: |
+      Mentions sur les réseaux sociaux nettoyées (couche staging).
+      
+      Cette table contient les posts/commentaires collectés sur les réseaux sociaux
+      concernant les contenus BigMedia. Elle sert de base pour les modèles intermédiaires
+      (int_) qui calculeront l'engagement total et l'analyse de sentiment.
+      
+      
+    columns:
+      - name: mention_id
+        description: "Identifiant unique de la mention (clé primaire)"
+        tests:
+          - unique
+          - not_null
+          
+      - name: content_title_mentioned
+        description: "Titre du contenu mentionné (pour matching avec stg_contents.title)"
+        tests:
+          - not_null
+          
+      - name: content_id
+        description: "Unique content identifier"
+        tests:
+          - not_null
+          
+      - name: platform
+        description: "Plateforme source de la mention"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['Twitter', 'Facebook', 'TikTok', 'Instagram']
+              
+      - name: author_id
+        description: "Identifiant anonymisé de l'auteur du post"
+        tests:
+          - not_null
+          
+      - name: mention_text
+        description: "Texte brut du commentaire/post"
+        tests:
+          - not_null
+          
+      - name: likes_count
+        description: "Nombre de likes/j'aime sur le post"
+        tests:
+          - not_null
+          
+      - name: shares_count
+        description: "Nombre de partages/retweets du post"
+        tests:
+          - not_null
+          
+      - name: publication_timestamp
+        description: "Timestamp de publication du post"
+        tests:
+          - not_null

@@ -65,7 +65,36 @@ You can still perform the steps manually if you prefer; the remainder of this gu
    tofu output -json > terraform-outputs.json
    ```
 
-5. **Generate dbt profiles and Prefect blocks**
+5. **Configure GitHub Secrets for dbt documentation deployment**
+   
+   To enable automatic deployment of dbt documentation to GitHub Pages, add the following secrets to your GitHub repository:
+   
+   Go to **Settings** > **Secrets and variables** > **Actions** > **New repository secret** and add:
+   
+   | Secret Name | Value | Source |
+   |-------------|-------|--------|
+   | `DBT_SERVICE_ACCOUNT_JSON` | Complete content of the service account JSON key file | See step 6 below |
+   | `GCP_PROJECT_ID` | Your GCP project ID | `jq -r '.project_id.value' terraform-outputs.json` |
+   | `GCP_DEV_DATASET` | Development dataset ID | `jq -r '.bq_dev_dataset_id.value' terraform-outputs.json` |
+   | `GCP_PROD_DATASET` | Production dataset ID | `jq -r '.bq_prod_dataset_id.value' terraform-outputs.json` |
+   | `GCP_REGION` | GCP region | `jq -r '.region.value' terraform-outputs.json` |
+   
+   Extract values easily with:
+   ```bash
+   # Display all values needed for GitHub secrets
+   cat terraform-outputs.json | jq -r '
+     "GCP_PROJECT_ID: " + .project_id.value,
+     "GCP_DEV_DATASET: " + .bq_dev_dataset_id.value,
+     "GCP_PROD_DATASET: " + .bq_prod_dataset_id.value,
+     "GCP_REGION: " + .region.value
+   '
+   ```
+   
+   The service account JSON key will be created in step 6.
+   
+   See [`.github/workflows/README.md`](../.github/workflows/README.md) for detailed documentation deployment information.
+
+6. **Generate the dbt profiles and Prefect blocks**
    
    The project uses `scripts/render_template` and `scripts/setup_prefect_blocks.py` to generate configurations.
 
