@@ -182,6 +182,10 @@ def upload_files_to_gcs(data_dir: Path, env: str = "dev"):
     Raises:
         Exception: Si l'upload échoue après tous les retries
     """
+
+    if env not in ["dev", "prod"]:
+        raise ValueError(f"Invalid environment '{env}'. Must be 'dev' or 'prod'.")
+
     logger = get_run_logger()
     
     run_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -233,8 +237,8 @@ def upload_files_to_gcs(data_dir: Path, env: str = "dev"):
         bucket = storage_client.bucket(bucket_name)
         # Check if bucket exists (lightweight check)
         if not bucket.exists():
-             logger.error(f"Le bucket '{bucket_name}' n'existe pas ou est inaccessible.")
-             raise Exception(f"Bucket not found: {bucket_name}")
+            logger.error(f"Le bucket '{bucket_name}' n'existe pas ou est inaccessible.")
+            raise Exception(f"Bucket not found: {bucket_name}")
         logger.info(f"Bucket '{bucket_name}' accessible")
     except Exception as e:
         logger.error(f"Impossible d'accéder au bucket '{bucket_name}': {e}")
@@ -346,9 +350,13 @@ def refill_bucket_flow(env: str = "dev"):
         # Déclenchement manuel via l'UI ou la CLI
         prefect deployment run refill-bucket-flow/refill-bucket-weekly
         
-    Returns:
+    Args:
         env: Environnement cible (dev ou prod). Définit quel bucket utiliser.
     """
+
+    if env not in ["dev", "prod"]:
+        raise ValueError(f"Invalid environment '{env}'. Must be 'dev' or 'prod'.")
+
     logger = get_run_logger()
     
     logger.info(f"Démarrage du flow de remplissage du bucket GCS (env={env})")
