@@ -3,8 +3,238 @@ gcloud = "latest"
 opentofu = "latest"
 uv = 'latest'
 
+[hooks]
+enter = ["scripts/sync_env"]
+postinstall = ["scripts/sync_env"]
+
+[[watch_files]]
+patterns = [".env.example"]
+run = "scripts/sync_env"
+
+[env]
+# MISE_VERBOSE=1
+# RUST_BACKTRACE="full"
+'_'.file = { path = ".env" }
+
+# Add git metadata to the environment
+'_'.source = { path = "scripts/get_git_env.sh" }
+
+# TF_LOG = { value = "DEBUG" }
+PREFECT_PROFILES_PATH = { value = "profiles.toml" }
+
+GCLOUD_SA_DBT_ID = { value = "dbt-sa" }
+
+
 [settings]
 python.uv_venv_auto = true
 
+[tasks.setup]
+description = "Set up the development environment."
+depends = ["lock_requirements", "infra:apply", "dbt:render_profiles", "prefect:render_configs", "prefect:setup_blocks"]
+
 [tasks.lock_requirements]
+description = "Lock Python dependencies into requirements.txt using pip-compile."
+sources = ["pyproject.toml", "setup.cfg"]
 run = "uv pip compile pyproject.toml -o requirements.txt"
+
+[tasks."infra:init"]
+description = "Run 'opentofu init' in the infrastructure directory."
+sources = ["infrastructure/providers.tf", ".env"]
+depends = ["infra:provide_backend"]
+usage = '''
+flag "--enabled-gcp-backend-config" help="Enable GCP backend configuration during init" negate="--disable-gcp-backend-config" default=#true
+flag "--prefix <prefix>" help="Prefix for the Terraform state in the GCS bucket" default="terraform/state"
+'''
+env = { GCLOUD_PROJECT = { required = true }, TERRAFORM_STATE_BUCKET = { value = "{{ env.GCLOUD_PROJECT }}-tfstate" } }
+run = '''
+set -euo pipefail
+
+if [ "${usage_enabled_gcp_backend_config?}" = "true" ]; then
+    echo "Running 'opentofu init' with GCP backend configuration..."
+    echo "Using bucket: ${TERRAFORM_STATE_BUCKET}, prefix: ${usage_prefix?}"
+    tofu -chdir=infrastructure init -backend-config="bucket=${TERRAFORM_STATE_BUCKET}" -backend-config="prefix=${usage_prefix?}"
+else
+    echo "Running 'opentofu init' without GCP backend configuration..."
+    tofu -chdir=infrastructure init
+fi
+'''
+
+[tasks."infra:plan"]
+description = "Run 'opentofu plan' in the infrastructure directory."
+sources = ["infrastructure/**/*.tfvars"]
+depends = ["infra:init"]
+env = { TF_VAR_region = { value = "{{ env.GCLOUD_REGION }}" }, TF_VAR_project_id = { value = "{{ env.GCLOUD_PROJECT  }}" }, TF_VAR_sa_dbt_id = { value = "{{ env.GCLOUD_SA_DBT_ID }}" } }
+run = "tofu -chdir=infrastructure plan"
+
+[tasks."infra:apply"]
+description = "Run 'opentofu apply' in the infrastructure directory."
+depends = ["infra:plan"]
+depends_post = ["infra:outputs"]
+sources = ["infrastructure/**/*.tfvars"]
+usage = '''
+flag "--auto-approve" help="Skip interactive approval prompt" negate="--no-auto-approve" default=#true
+'''
+env = { TF_VAR_region = { value = "{{ env.GCLOUD_REGION }}" }, TF_VAR_project_id = { value = "{{ env.GCLOUD_PROJECT  }}" }, TF_VAR_sa_dbt_id = { value = "{{ env.GCLOUD_SA_DBT_ID }}" } }
+run = "tofu -chdir=infrastructure apply ${usage_auto_approve:+-auto-approve}"
+
+[tasks."infra:outputs"]
+description = "Export Terraform/OpenTofu outputs to a JSON file."
+depends = ["infra:init"]
+sources = ["infrastructure/**/*.tfvars"]
+usage = '''
+flag "--file <file>" help="Path to write the JSON outputs" default="infrastructure/terraform-outputs.json"
+'''
+run = '''
+set -euo pipefail
+
+OUTPUT_PATH="${usage_file?}"
+
+echo "Exporting OpenTofu outputs to ${OUTPUT_PATH}..."
+mkdir -p "$(dirname "${OUTPUT_PATH}")"
+tofu -chdir=infrastructure output -json > "${OUTPUT_PATH}"
+echo "Terraform outputs written to ${OUTPUT_PATH}."
+'''
+
+# [DEPRECATED]
+[tasks.sync_env]
+description = "Create missing .env from .env.example; append new variables as commented placeholders and warn the user to set them."
+sources = [".env.example"]
+outputs = [".env"]
+usage = '''
+flag "--example <example>" help="Path to the .env.example file" default=".env.example"
+flag "--target <target>" help="Path to the target .env file" default=".env"
+flag "--dry-run" help="Preview changes without writing files"
+flag "--log-level <level>" help="Logging level (debug, info, warning, error, critical)" default="info" {
+    choices "debug" "info" "warning" "error" "critical"
+}
+flag "--fail-on-missing" help="Exit with non-zero status when new placeholder vars are added" negate="--no-fail-on-missing" default=#true
+'''
+run = './scripts/sync_env'
+
+[tasks."infra:provide_backend"]
+description = "Provision the backend infrastructure required for OpenTofu state storage."
+depends = ["gcloud:provide_state_bucket"]
+
+[tasks."gcloud:auth"]
+description = "Ensure ADC and CLI are authenticated without modifying global config."
+run = '''
+set -euo pipefail
+
+# Check CLI auth
+if ! gcloud auth print-access-token > /dev/null 2>&1; then
+    echo "Launching gcloud login flow..."
+    gcloud auth login
+fi
+
+# Check ADC (Application Default Credentials)
+if ! gcloud auth application-default print-access-token > /dev/null 2>&1; then
+    echo "Configuring application-default credentials..."
+    gcloud auth application-default login
+fi
+'''
+
+[tasks."gcloud:provide_state_bucket"]
+description = "Create the GCS bucket for Terraform state if it does not exist."
+depends = ["gcloud:auth"]
+env = { GCLOUD_PROJECT = { required = true }, TERRAFORM_STATE_BUCKET = { value = "{{ env.GCLOUD_PROJECT }}-tfstate" } }
+run = '''
+set -euo pipefail
+
+PROJECT_ID="${GCLOUD_PROJECT}"
+BUCKET_NAME="${TERRAFORM_STATE_BUCKET}"
+LOCATION="${TERRAFORM_STATE_BUCKET_LOCATION:-}"
+
+if gcloud storage buckets describe "gs://${BUCKET_NAME}" --project="${PROJECT_ID}" > /dev/null 2>&1; then
+    echo "Bucket ${BUCKET_NAME} already exists in project ${PROJECT_ID}."
+else
+    LOCATION_FLAG=""
+    if [ -n "${LOCATION}" ]; then
+        LOCATION_FLAG="--location=${LOCATION}"
+    fi
+    echo "Creating bucket ${BUCKET_NAME} in project ${PROJECT_ID} ${LOCATION:+(location ${LOCATION})}..."
+    gcloud storage buckets create "gs://${BUCKET_NAME}" ${LOCATION_FLAG} --project="${PROJECT_ID}" --uniform-bucket-level-access
+fi
+'''
+
+[tasks."gcloud:create_sa_key"]
+description = "Generate .secrets/sa_key.json for a given service account email."
+depends = ["gcloud:auth"]
+usage = '''
+flag "--email <email>" help="Service account email used to create the key" default="{{ env.GCLOUD_SA_DBT_ID }}@{{ env.GCLOUD_PROJECT }}.iam.gserviceaccount.com"
+flag "--output <output>" help="Destination path for the JSON key" default=".secrets/sa_key.json"
+flag "--dry-run" help="Preview the gcloud command without creating the key"
+'''
+run = '''
+set -euo pipefail
+
+echo "Creating service account key for ${usage_email?}..."
+
+EMAIL="${usage_email:?Service account email is required}"
+OUTPUT_PATH="${usage_output?}"
+DRY_RUN="${usage_dry_run:-false}"
+
+mkdir -p "$(dirname "${OUTPUT_PATH}")"
+
+if [ "${DRY_RUN}" = "true" ]; then
+    echo "DRY RUN: would run 'gcloud iam service-accounts keys create ${OUTPUT_PATH} --iam-account ${EMAIL}'"
+    exit 0
+fi
+
+if [ -f "${OUTPUT_PATH}" ]; then
+    BACKUP_PATH="${OUTPUT_PATH}.$(date +%Y%m%d%H%M%S).bak"
+    echo "Existing key found at ${OUTPUT_PATH}. Backing up to ${BACKUP_PATH} before creating a new one..."
+    mv "${OUTPUT_PATH}" "${BACKUP_PATH}"
+fi
+
+gcloud iam service-accounts keys create "${OUTPUT_PATH}" --iam-account "${EMAIL}"
+chmod 600 "${OUTPUT_PATH}"
+echo "Service account key written to ${OUTPUT_PATH}."
+'''
+
+[tasks."dbt:render_profiles"]
+description = "render dbt profiles.yml from template using environment variables."
+sources = ["dbt/profiles.tpl.yml", "scripts/render_template"]
+outputs = ["dbt/profiles.yml"]
+depends = ["infra:outputs"]
+run = "scripts/render_template dbt/profiles.tpl.yml"
+
+[tasks."prefect:render_configs"]
+description = "Render Prefect configuration files from templates using environment variables."
+sources = ["prefect.tpl.yml", "scripts/render_template"]
+outputs = ["prefect.yml"]
+depends = ["infra:outputs"]
+run = "scripts/render_template prefect.tpl.yml"
+
+[tasks."prefect:setup_blocks"]
+description = "Create Prefect blocks (GCP credentials, BigQuery target configs, and DBT profiles) from the rendered dbt/profiles.yml"
+sources = ["dbt/profiles.yml", "scripts/setup_prefect_blocks.py", ".secrets/sa_key.json"]
+depends = ["dbt:render_profiles", "gcloud:create_sa_key"]
+usage = '''
+flag "--service-account <path>" help="Path to service account JSON (default: .secrets/sa_key.json)" default=".secrets/sa_key.json"
+flag "--save" help="Actually save Prefect blocks" negate="--no-save" default=#true
+flag "--overwrite" help="Overwrite existing blocks" negate="--no-overwrite" default=#false
+flag "--no-verify" help="Skip verification step after saving blocks" negate="--verify" default=#false
+flag "--targets" help="Limit the targets to configure (space separated)" default="" 
+'''
+run = '''
+set -euo pipefail
+
+ARGS=""
+if [ "${usage_save}" = "true" ]; then
+    ARGS="${ARGS} --save"
+fi
+if [ "${usage_overwrite}" = "true" ]; then
+    ARGS="${ARGS} --overwrite"
+fi
+if [ "${usage_no_verify}" = "true" ]; then
+    ARGS="${ARGS} --no-verify"
+fi
+if [ -n "${usage_targets}" ]; then
+    ARGS="${ARGS} --targets ${usage_targets}"
+fi
+
+SVC_KEY_PATH="${usage_service_account}"
+
+echo "Running 'setup_prefect_blocks.py' with args: ${ARGS}"
+scripts/setup_prefect_blocks.py --profiles dbt/profiles.yml --service-account "${SVC_KEY_PATH}" ${ARGS}
+'''

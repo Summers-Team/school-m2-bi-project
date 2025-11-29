@@ -1,0 +1,164 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.10"
+# dependencies = [
+#     "python-dotenv",
+#     "click",
+#     "rich",
+# ]
+# ///
+
+#MISE description="Sync .env with .env.example: deprecate old vars, add new ones, preserve values."
+#MISE sources=[".env.example"]
+#MISE outputs=[".env"]
+
+#USAGE flag "--example <example>" help="Path to the .env.example file" default=".env.example"
+#USAGE flag "--target <target>" help="Path to the target .env file" default=".env"
+#USAGE flag "--dry-run" help="Preview changes without writing files"
+#USAGE flag "--fail-on-missing" help="Exit with error if new variables were added" default=#true negate="--no-fail-on-missing"
+
+import os
+import re
+import sys
+import shutil
+from pathlib import Path
+from typing import Set, List, Optional
+
+# We use rich for better terminal output
+from rich.console import Console
+from rich.theme import Theme
+from dotenv import dotenv_values
+
+console = Console(theme=Theme({
+    "info": "cyan",
+    "warning": "yellow",
+    "error": "bold red",
+    "success": "bold green",
+    "added": "green",
+    "removed": "dim strike"
+}))
+
+# Regex to identify keys in the TARGET file (supports 'export KEY=...')
+# We only care about the KEY. We leave the value parsing to the human/shell.
+TARGET_KEY_RE = re.compile(r"^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=")
+
+def get_env_or_arg(key: str, default: str, is_bool: bool = False):
+    """
+    Helper to bridge Mise (env vars) and standard CLI usage.
+    Mise passes flags as usage_flag_name.
+    """
+    env_key = f"usage_{key}"
+    val = os.environ.get(env_key)
+    
+    # Fallback: Check sys.argv for simple flag parsing if running standalone
+    if val is None:
+        arg_flag = f"--{key.replace('_', '-')}"
+        if is_bool:
+            val = "true" if arg_flag in sys.argv else "false"
+        else:
+            try:
+                idx = sys.argv.index(arg_flag)
+                val = sys.argv[idx+1]
+            except ValueError:
+                val = default
+            except IndexError:
+                raise ValueError(f"Flag '{arg_flag}' requires a value, but none was provided.")
+
+    if is_bool:
+        return val.lower() in ("true", "1", "yes")
+    return val or default
+
+def main():
+    # 1. Configuration
+    example_path = Path(get_env_or_arg("example", ".env.example"))
+    target_path = Path(get_env_or_arg("target", ".env"))
+    dry_run = get_env_or_arg("dry_run", "false", is_bool=True)
+    fail_on_missing = get_env_or_arg("fail_on_missing", "true", is_bool=True)
+
+    if not example_path.exists():
+        console.print(f"[error]Example file not found:[/error] {example_path}")
+        sys.exit(1)
+
+    # 2. Load the "Truth"
+    # dotenv_values handles quoting, multiline, and comments in the example file perfectly
+    example_vars = dotenv_values(example_path)
+    example_keys = set(example_vars.keys())
+
+    # 3. Initialize Target
+    if not target_path.exists():
+        console.print(f"[warning]Target {target_path} does not exist. Creating from scratch...[/warning]")
+        if not dry_run:
+            shutil.copy(example_path, target_path)
+        console.print(f"[success]Created {target_path}[/success]")
+        if fail_on_missing:
+            sys.exit(1) # Exit so user can fill it
+        return
+
+    # 4. Process Target Line-by-Line
+    # We do this manually to preserve the user's comments and whitespace.
+    original_lines = target_path.read_text(encoding="utf-8").splitlines()
+    new_lines: List[str] = []
+    seen_keys: Set[str] = set()
+    changes_made = False
+    missing_vars_count = 0
+
+    for line in original_lines:
+        match = TARGET_KEY_RE.match(line)
+        
+        # If it's just a comment or empty line, keep it
+        if not match:
+            new_lines.append(line)
+            continue
+
+        key = match.group(1)
+        
+        # CASE A: Key exists in target, but NOT in example
+        if key not in example_keys:
+            console.print(f"[removed]Deprecating variable:[/removed] {key}")
+            # Comment it out to "deprecate" it
+            new_lines.append(f"# [DEPRECATED in example] {line}")
+            changes_made = True
+            continue
+
+        # CASE B: Key exists in both
+        seen_keys.add(key)
+        new_lines.append(line)
+
+    # 5. Identify Missing Keys (In Example, not in Target)
+    missing_keys = example_keys - seen_keys
+    
+    if missing_keys:
+        new_lines.append("") # Add spacing
+        new_lines.append(f"# --- New variables synced from {example_path.name} ---")
+        
+        for key in sorted(missing_keys):
+            val = example_vars[key] or ""
+            # Quote value if it contains special chars (simple heuristic)
+            if " " in val or "#" in val:
+                val = f'"{val}"'
+            
+            console.print(f"[added]Adding new variable:[/added] {key}")
+            new_lines.append(f"{key}={val} # TODO: Review this value")
+            missing_vars_count += 1
+            changes_made = True
+
+    # 6. Write / Report
+    if not changes_made:
+        console.print(f"[success]✔ {target_path.name} is already in sync.[/success]")
+        return
+
+    if dry_run:
+        console.print("[info]Dry run complete. No files written.[/info]")
+    else:
+        # Write back to file
+        with open(target_path, "w", encoding="utf-8") as f:
+            f.write("\n".join(new_lines) + "\n")
+        console.print(f"[success]✔ Updated {target_path.name}[/success]")
+
+    # 7. Exit logic
+    if missing_vars_count > 0 and fail_on_missing:
+        console.print(f"[error]Aborting: {missing_vars_count} new variables were added. Please review {target_path.name}.[/error]")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()

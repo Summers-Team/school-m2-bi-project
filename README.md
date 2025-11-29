@@ -11,15 +11,26 @@ Detailed prerequisites and step-by-step deployment instructions now live in [`in
 - **dbt:** Use the generated `dbt/profiles.yml` for development and production environments.
 - **BigQuery:** Access the dev and prod datasets as specified in the Terraform outputs.
 
-### Local environment with uv
+### Local environment with uv and mise
 
 - Install [uv](https://docs.astral.sh/uv/getting-started/installation/) to manage the Python environment described by `pyproject.toml` and `uv.lock`.
-- Run commands inside the managed environment with `uv run`, which keeps the virtual environment and lockfile in sync automatically. For example:
+- Install [mise](https://mise.jdx.dev/) to manage tools and tasks.
 
-	```bash
-	uv run scripts/generate_profiles.py
-	uv run -- dbt debug
-	```
+Most tasks are automated via `mise`. Run `mise tasks` to see available commands.
+
+Common workflows:
+
+```bash
+# 1. Sync environment variables
+mise run sync_env
+
+# 2. Generate configuration files (dbt profiles, prefect config)
+mise run dbt:render_profiles
+mise run prefect:render_configs
+
+# 3. Run dbt commands
+uv run -- dbt debug
+```
 
 - If you prefer to activate the virtual environment manually, first synchronize dependencies and then source `.venv`:
 

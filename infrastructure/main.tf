@@ -1,37 +1,3 @@
-terraform {
-  backend "gcs" {
-    bucket = var.state_bucket
-    prefix = "terraform/state"
-  }
-
-  required_providers {
-    google = {
-      source  = "hashicorp/google"
-      version = ">= 5.0"
-    }
-  }
-}
-
-provider "google" {
-  project = var.project_id
-  region  = var.region
-}
-
-# Terraform state bucket
-resource "google_storage_bucket" "terraform_state" {
-  name          = var.state_bucket
-  location      = var.region
-  force_destroy = true
-
-  versioning {
-    enabled = true
-  }
-
-  lifecycle {
-    prevent_destroy = true
-  }
-}
-
 # Ingested data bucket
 resource "google_storage_bucket" "ingested_data" {
   name          = var.ingested_data_bucket
@@ -43,7 +9,7 @@ resource "google_storage_bucket" "ingested_data" {
 
 # Dev dataset
 resource "google_bigquery_dataset" "dev_dataset" {
-  dataset_id                  = var.bq_dev_dataset_id
+  dataset_id                  = "${replace(var.project_id, "-", "_")}_${var.dev_suffix}"
   location                    = var.region
   description                 = "Development dataset for BI project"
   friendly_name               = "BI Dataset (dev)"
@@ -52,7 +18,7 @@ resource "google_bigquery_dataset" "dev_dataset" {
 
 # Prod dataset
 resource "google_bigquery_dataset" "prod_dataset" {
-  dataset_id    = var.bq_prod_dataset_id
+  dataset_id    = "${replace(var.project_id, "-", "_")}_${var.prod_suffix}"
   location      = var.region
   description   = "Production dataset for BI project"
   friendly_name = "BI Dataset (prod)"
@@ -60,7 +26,7 @@ resource "google_bigquery_dataset" "prod_dataset" {
 
 # Service account for dbt and minimal IAM bindings
 resource "google_service_account" "dbt_sa" {
-  account_id   = var.sa_account_id
+  account_id   = var.sa_dbt_id
   display_name = "DBT service account"
 }
 

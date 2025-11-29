@@ -1,0 +1,204 @@
+#!/usr/bin/env -S uv run --script
+# requires-python = ">=3.11"
+# dependencies = [
+#     "jinja2",
+#     "rich",
+#     "PyYAML",
+# ]
+# ///
+
+import argparse
+import json
+import os
+import sys
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+import yaml
+from jinja2 import Template
+from rich.console import Console
+from rich.panel import Panel
+
+console = Console()
+
+def load_terraform_outputs(path: Optional[Path]) -> Dict[str, Any]:
+    """Load terraform outputs from JSON file."""
+    if not path or not path.exists():
+        if path:
+            console.print(f"[yellow]Warning:[/yellow] Terraform outputs file not found at [bold]{path}[/bold]")
+        return {}
+    
+    try:
+        with open(path, "r") as f:
+            data = json.load(f)
+            # Terraform outputs are in format {"key": {"value": "val", "type": "..."}}
+            # We want to flatten this to {"key": "val"}
+            return {k: v.get("value") if isinstance(v, dict) else v for k, v in data.items()}
+    except json.JSONDecodeError:
+        console.print(f"[red]Error:[/red] Failed to parse terraform outputs at [bold]{path}[/bold]")
+        return {}
+
+def normalize_tf_key(k: str) -> str:
+    """Normalize TF keys into nicer friendly names (e.g. bq_dev_dataset_id -> dev_dataset)"""
+    k = k.lower()
+    # remove common prefixes
+    for prefix in ("bq_", "gcp_", "google_"):
+        if k.startswith(prefix):
+            k = k[len(prefix):]
+    # remove common suffixes
+    for suffix in ("_id", "_name", "_path"):
+        if k.endswith(suffix):
+            k = k[: -len(suffix)]
+    # replace dashes with underscores
+    k = k.replace("-", "_")
+    return k
+
+def get_tf_context(tf_outputs: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Prepare terraform context with raw and friendly names.
+    """
+    context = dict(tf_outputs)
+    # add normalized friendly names if they don't collide with existing keys
+    for raw_key, value in tf_outputs.items():
+        friendly = normalize_tf_key(raw_key)
+        if friendly and friendly not in context:
+            context[friendly] = value
+    return context
+
+def load_context_file(path: Path) -> Dict[str, Any]:
+    """Load context from a JSON or YAML file."""
+    if not path.exists():
+        console.print(f"[yellow]Warning:[/yellow] Context file not found at [bold]{path}[/bold]")
+        return {}
+    
+    try:
+        with open(path, "r") as f:
+            if path.suffix in (".yaml", ".yml"):
+                return yaml.safe_load(f) or {}
+            else:
+                return json.load(f)
+    except (json.JSONDecodeError, yaml.YAMLError) as e:
+        console.print(f"[red]Error:[/red] Failed to parse context file at [bold]{path}[/bold]: {e}")
+        return {}
+
+def parse_defines(defines: List[str]) -> Dict[str, Any]:
+    """Parse list of key=value strings into a dictionary."""
+    result = {}
+    for define in defines:
+        if "=" not in define:
+            console.print(f"[yellow]Warning:[/yellow] Invalid define format '{define}'. Expected key=value.")
+            continue
+        key, value = define.split("=", 1)
+        result[key.strip()] = value.strip()
+    return result
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Render Jinja2 templates with context from Env vars, Terraform outputs, and files."
+    )
+    parser.add_argument(
+        "template", 
+        type=Path, 
+        help="Path to the Jinja2 template file"
+    )
+    parser.add_argument(
+        "--output", "-o", 
+        type=Path, 
+        help="Path to the output file. Defaults to removing .tpl/.template extension."
+    )
+    parser.add_argument(
+        "--tf-outputs", 
+        type=Path, 
+        help="Path to terraform-outputs.json. Defaults to searching in common locations."
+    )
+    parser.add_argument(
+        "--context", "-c",
+        type=Path,
+        action="append",
+        help="Path to JSON or YAML context file. Can be specified multiple times."
+    )
+    parser.add_argument(
+        "--define", "-D",
+        action="append",
+        help="Define a context variable in key=value format. Can be specified multiple times."
+    )
+    
+    args = parser.parse_args()
+    
+    template_path = args.template
+    if not template_path.exists():
+        console.print(f"[red]Error:[/red] Template file not found at [bold]{template_path}[/bold]")
+        sys.exit(1)
+
+    # Determine output path
+    if args.output:
+        output_path = args.output
+    else:
+        # Default: remove .tpl or .template, or add .rendered
+        name = template_path.name
+        if name.endswith(".tpl.yml"):
+            new_name = name.replace(".tpl.yml", ".yml")
+        elif name.endswith(".tpl"):
+            new_name = name[:-4]
+        elif name.endswith(".template"):
+            new_name = name[:-9]
+        else:
+            new_name = name + ".rendered"
+        output_path = template_path.with_name(new_name)
+
+    # Determine terraform outputs path
+    tf_outputs_path = args.tf_outputs
+    if not tf_outputs_path:
+        # Try to find it relative to script or current working directory
+        candidates = [
+            Path("infrastructure/terraform-outputs.json"),
+            Path("terraform-outputs.json"),
+            # If script is in scripts/, parent is root
+            Path(__file__).parent.parent / "infrastructure" / "terraform-outputs.json"
+        ]
+        for c in candidates:
+            if c.exists():
+                tf_outputs_path = c
+                break
+    
+    with console.status("[bold green]Rendering template...") as status:
+        # 1. Environment Variables
+        full_context = {"env": dict(os.environ)}
+
+        # 2. Terraform Outputs
+        if tf_outputs_path:
+            status.update(f"Loading terraform outputs from [bold]{tf_outputs_path}[/bold]...")
+            tf_outputs = load_terraform_outputs(tf_outputs_path)
+            full_context["tf"] = get_tf_context(tf_outputs)
+        else:
+            full_context["tf"] = {}
+
+        # 3. Context Files
+        if args.context:
+            for ctx_path in args.context:
+                status.update(f"Loading context from [bold]{ctx_path}[/bold]...")
+                file_ctx = load_context_file(ctx_path)
+                full_context.update(file_ctx)
+
+        # 4. Defines
+        if args.define:
+            status.update("Applying CLI definitions...")
+            defines_ctx = parse_defines(args.define)
+            full_context.update(defines_ctx)
+        
+        status.update(f"Reading template from [bold]{template_path}[/bold]...")
+        with open(template_path, "r") as f:
+            template_content = f.read()
+
+        status.update("Rendering...")
+        template = Template(template_content)
+        rendered = template.render(**full_context)
+
+        status.update(f"Writing output to [bold]{output_path}[/bold]...")
+        with open(output_path, "w") as f:
+            f.write(rendered)
+    
+    console.print(Panel(f"Successfully generated [bold green]{output_path}[/bold green]", title="Done", border_style="green"))
+
+if __name__ == "__main__":
+    main()

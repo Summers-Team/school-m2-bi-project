@@ -17,12 +17,15 @@ def test_dbt_debug_flow():
     """
     project_dir = Path(__file__).parent.parent / "dbt"
 
-    bigquery_target_configs = BigQueryTargetConfigs.load("bigquery-target-configs-dev")
-    print(f"Using BigQuery target configs: {bigquery_target_configs}")
+    bigquery_target_configs = BigQueryTargetConfigs.load("dbt-bq-target-dev")
+    # print(f"Block BigQueryTargetConfigs : {bigquery_target_configs.model_dump_json()}")
+    print(f"Block BigQueryTargetConfigs : {bigquery_target_configs.get_configs()}")
+    
 
     # Charger le bloc profil dbt
     dbt_cli_profile_block = DbtCliProfile.load("dbt-cli-profile-dev")
-    print(f"Using dbt profile: {dbt_cli_profile_block}")
+    # print(f"Block DbtCliProfile : {dbt_cli_profile_block.model_dump_json()}")
+    print(f"Block DbtCliProfile : {dbt_cli_profile_block.get_profile()}")
     
     
 
@@ -33,11 +36,12 @@ def test_dbt_debug_flow():
         target_configs=bigquery_target_configs
     )
     
-    print(f"Using dbt profile: {dbt_cli_profile}")
+    print(f"Recreated DbtCliProfile: {dbt_cli_profile.get_profile()}")
     
     # Construire l'opération dbt run
     dbt_operation = DbtCoreOperation(
         project_dir=project_dir,
+        overwrite_profiles=True,
         dbt_cli_profile=dbt_cli_profile,
         commands=["dbt debug"],
         target="dev",

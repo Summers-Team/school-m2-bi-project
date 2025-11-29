@@ -14,14 +14,14 @@ pull:
   # - prefect.deployments.steps.git_clone:
   #     id: git-clone
   #     branch: main
-  #     repository: https://x-access-token:{{ get-github-token.stdout }}@github.com/Bafbi/projet-m2-bi.git
+  #     repository: https://x-access-token:{{ "{{ get-github-token.stdout }}" }}@github.com/Bafbi/projet-m2-bi.git
   - prefect.deployments.steps.git_clone:
       id: git-clone
       branch: main
-      repository: https://github.com/Bafbi/projet-m2-bi.git
+      repository: "{{ env.GIT_REMOTE_URL }}"
   - prefect.deployments.steps.run_shell_script:
       script: uv pip install -r requirements.txt
-      directory: "{{ git-clone.directory }}"
+      directory: {{ "{{ git-clone.directory }}" }}
 
 # deployment configurations
 deployments:
