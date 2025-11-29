@@ -220,7 +220,7 @@ def setup_dbt_blocks_pipeline(
         dbt_operation_run = setup_dbt_operation(
             dbt_profile=dbt_profile,
             dbt_profile_block_name=dbt_profile_block_name,
-            dbt_commands=["dbt run"],
+            dbt_commands=[f"dbt run --target {target_name}"],
             dbt_operation_block_name=dbt_operation_run_block_name,
             project_dir=dbt_project_dir
         )
@@ -228,7 +228,7 @@ def setup_dbt_blocks_pipeline(
         dbt_operation_test = setup_dbt_operation(
             dbt_profile=dbt_profile,
             dbt_profile_block_name=dbt_profile_block_name,
-            dbt_commands=["dbt test"],
+            dbt_commands=[f"dbt test --target {target_name}"],
             dbt_operation_block_name=dbt_operation_test_block_name,
             project_dir=dbt_project_dir
         )
@@ -236,7 +236,7 @@ def setup_dbt_blocks_pipeline(
         dbt_operation_debug = setup_dbt_operation(
             dbt_profile=dbt_profile,
             dbt_profile_block_name=dbt_profile_block_name,
-            dbt_commands=["dbt debug"],
+            dbt_commands=[f"dbt debug --target {target_name}"],
             dbt_operation_block_name=dbt_operation_debug_block_name,
             project_dir=dbt_project_dir
         )
