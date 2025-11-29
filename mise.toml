@@ -34,6 +34,7 @@ depends = ["lock_requirements", "infra:apply", "dbt:render_profiles", "prefect:r
 
 [tasks.lock_requirements]
 description = "Lock Python dependencies into requirements.txt using pip-compile."
+sources = ["pyproject.toml", "setup.cfg"]
 run = "uv pip compile pyproject.toml -o requirements.txt"
 
 [tasks."infra:init"]
@@ -206,7 +207,7 @@ run = "scripts/render_template prefect.tpl.yml"
 [tasks."prefect:setup_blocks"]
 description = "Create Prefect blocks (GCP credentials, BigQuery target configs, and DBT profiles) from the rendered dbt/profiles.yml"
 sources = ["dbt/profiles.yml"]
-depends = ["dbt:render_profiles"]
+depends = ["dbt:render_profiles", "gcloud:create_sa_key"]
 usage = '''
 flag "--service-account <path>" help="Path to service account JSON (default: .secrets/sa_key.json)" default=".secrets/sa_key.json"
 flag "--save" help="Actually save Prefect blocks" negate="--no-save" default=#false
