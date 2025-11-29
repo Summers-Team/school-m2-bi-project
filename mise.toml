@@ -12,6 +12,8 @@ patterns = [".env.example"]
 run = "scripts/sync_env"
 
 [env]
+# MISE_VERBOSE=1
+# RUST_BACKTRACE="full"
 '_'.file = { path = ".env" }
 
 # Add git metadata to the environment
@@ -57,6 +59,16 @@ sources = ["infrastructure/**/*.tfvars"]
 depends = ["infra:init", "infra:provide_backend"]
 env = { TF_VAR_region = { value = "{{ env.GCLOUD_REGION }}" }, TF_VAR_project_id = { value = "{{ env.GCLOUD_PROJECT  }}" }, TF_VAR_sa_dbt_id = { value = "{{ env.GCLOUD_SA_DBT_ID }}" } }
 run = "tofu -chdir=infrastructure plan"
+
+[tasks."infra:apply"]
+description = "Run 'opentofu apply' in the infrastructure directory."
+depends = ["infra:plan"]
+depends_post = ["infra:outputs"]
+usage = '''
+flag "--auto-approve" help="Skip interactive approval prompt" negate="--no-auto-approve" default=#true
+'''
+env = { TF_VAR_region = { value = "{{ env.GCLOUD_REGION }}" }, TF_VAR_project_id = { value = "{{ env.GCLOUD_PROJECT  }}" }, TF_VAR_sa_dbt_id = { value = "{{ env.GCLOUD_SA_DBT_ID }}" } }
+run = "tofu -chdir=infrastructure apply ${usage_auto_approve:+-auto-approve}"
 
 [tasks."infra:outputs"]
 description = "Export Terraform/OpenTofu outputs to a JSON file."
@@ -198,7 +210,7 @@ flag "--service-account <path>" help="Path to service account JSON (default: .se
 flag "--save" help="Actually save Prefect blocks" negate="--no-save" default=#false
 flag "--overwrite" help="Overwrite existing blocks" negate="--no-overwrite" default=#false
 flag "--no-verify" help="Skip verification step after saving blocks" negate="--verify" default=#false
-flag "--targets <targets...>" help="Limit the targets to configure (space separated)" default="" 
+flag "--targets" help="Limit the targets to configure (space separated)" default="" 
 '''
 run = '''
 set -euo pipefail
