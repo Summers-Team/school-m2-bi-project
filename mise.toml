@@ -160,13 +160,14 @@ fi
 description = "Generate .secrets/sa_key.json for a given service account email."
 depends = ["gcloud:auth"]
 usage = '''
-flag "--email <email>" help="Service account email used to create the key" env="GCLOUD_SA_EMAIL"
+flag "--email <email>" help="Service account email used to create the key" default="{{ env.GCLOUD_SA_DBT_ID }}@{{ env.GCLOUD_PROJECT }}.iam.gserviceaccount.com"
 flag "--output <output>" help="Destination path for the JSON key" default=".secrets/sa_key.json"
 flag "--dry-run" help="Preview the gcloud command without creating the key"
 '''
-env = { GCLOUD_SA_EMAIL = { value = "{{ env.GCLOUD_SA_DBT_ID }}@{{ env.GCLOUD_PROJECT }}.iam.gserviceaccount.com" } }
 run = '''
 set -euo pipefail
+
+echo "Creating service account key for ${usage_email?}..."
 
 EMAIL="${usage_email:?Service account email is required}"
 OUTPUT_PATH="${usage_output?}"
