@@ -1,0 +1,68 @@
+# Basic configuration for dbt-erd
+
+# Naming patterns
+naming:
+  dimension_patterns:
+    - "dim_"
+    - "_dim_"
+    - "dimension_"
+  fact_patterns:
+    - "fact_"
+    - "_fact_"
+    - "fct_"
+  dim_pk_patterns:
+    - "_pk"
+    - "_key" 
+    - "_id"
+  fact_pk_patterns:
+    - "_pk"
+    - "_key"
+    - "_id"
+  fact_fk_patterns:
+    - "_fk"
+    - "_id"
+  table_prefixes:
+    - "dw_"
+    - "mart_"
+    - "stg_"
+
+# Visualization settings
+visualization:
+  max_dimensions: 10
+  show_columns: true
+  column_limit: 20
+
+# Mermaid settings
+mermaid:
+  theme: "default"
+  direction: "LR"
+  outputs:
+    mmd: true   # Generate raw Mermaid source code
+    html: true  # Generate HTML with client-side rendering
+  interactive: true
+  
+  # Table styling options
+  style:
+    fact_table_fill: "#f5f5f5"       # Light gray for fact tables
+    dimension_table_fill: "#e8f4f8"  # Light blue for dimension tables
+  
+  # Embedding options for dbt docs
+  embed:
+    type: "pdf"  # Options: 'html' or 'pdf'
+
+# Performance settings
+performance:
+  parallel: false
+  max_workers: 2
+
+# File paths
+paths:
+  asset_base: "assets/img"
+  yaml_extension: ".yml"
+
+# Relationship settings
+relationships:
+  default_type: "many_to_one"
+  detect_from_naming: true
+  show_labels: true
+  multiple_fk_handling: "first"  # "first", "all", or "none"

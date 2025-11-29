@@ -4,7 +4,7 @@ models:
   # =============================================================================
   # dim_devices : Device dimension table for star schema
   # =============================================================================
-  - name: dim_devices
+  - name: dim__devices
     description: |
       Device dimension table containing information about viewing platforms.
       

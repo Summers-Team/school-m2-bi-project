@@ -4,7 +4,7 @@ models:
   # =============================================================================
   # dim_content : Content dimension table for star schema
   # =============================================================================
-  - name: dim_content
+  - name: dim__content
     description: |
       Content dimension table containing information about programs available on BigMedia.
       
