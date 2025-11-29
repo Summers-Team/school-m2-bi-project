@@ -1,6 +1,15 @@
-# Ingested data bucket
-resource "google_storage_bucket" "ingested_data" {
-  name          = var.ingested_data_bucket
+# Ingested data bucket (Dev)
+resource "google_storage_bucket" "ingested_data_dev" {
+  name          = "${var.project_id}-ingested-data-dev"
+  location      = var.region
+  storage_class = "STANDARD"
+
+  uniform_bucket_level_access = true
+}
+
+# Ingested data bucket (Prod)
+resource "google_storage_bucket" "ingested_data_prod" {
+  name          = "${var.project_id}-ingested-data-prod"
   location      = var.region
   storage_class = "STANDARD"
 

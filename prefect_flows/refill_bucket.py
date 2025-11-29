@@ -11,18 +11,16 @@ Architecture du pipeline :
     3. Validation : Vérification que tous les fichiers sont bien uploadés
 
 Usage :
-    # Exécution locale
+    # Exécution locale (dev par défaut)
     uv run python prefect_flows/refill_bucket.py
+    
+    # Pour prod
+    uv run python prefect_flows/refill_bucket.py --env prod
     
     # Avec Prefect Cloud (déploiement)
     prefect deployment build prefect_flows/refill_bucket.py:refill_bucket_flow -n "refill-bucket" -p default-pool
     prefect deployment apply refill_bucket_flow-deployment.yaml
     prefect deployment run refill-bucket-flow/refill-bucket
-
-Prérequis :
-    - Bloc Prefect 'gcp-credentials' configuré avec les credentials GCP
-    - Bucket GCS 'test-terraform-473818-ingested-data' provisionné via Terraform
-    - Script seed_script.py présent dans prefect_flows/seed_scripts/
 """
 
 from datetime import datetime
@@ -32,10 +30,12 @@ from google.cloud import storage
 from pathlib import Path
 import subprocess
 import sys
+import argparse
+import json
+import os
 
 
-# Configuration globale du bucket et des fichiers
-GCS_BUCKET_NAME = "test-terraform-473818-ingested-data"
+# Configuration globale
 GCS_PREFIX = "raw_data/"  # Préfixe pour organiser les fichiers dans le bucket
 RAW_DATA_DIR = Path(__file__).parent.parent / "raw_data"
 SEED_SCRIPT_PATH = Path(__file__).parent / "seed_scripts" / "seed_script.py"
@@ -48,6 +48,27 @@ EXPECTED_FILES = [
     "social_media_mentions.json"
 ]
 
+def get_terraform_output(key: str) -> str:
+    """
+    Récupère une valeur depuis le fichier terraform-outputs.json.
+    Utilisé pour maintenir la cohérence avec l'infrastructure déployée.
+    
+    Args:
+        key: La clé de l'output à récupérer (ex: "project_id")
+        
+    Returns:
+        La valeur de l'output si trouvée, None sinon.
+    """
+    tf_output_path = Path(__file__).parent.parent / "infrastructure" / "terraform-outputs.json"
+    if tf_output_path.exists():
+        try:
+            with open(tf_output_path) as f:
+                outputs = json.load(f)
+                if key in outputs:
+                    return outputs[key]["value"]
+        except Exception:
+            pass
+    return None
 
 @task(name="generate-seed-data", retries=1, retry_delay_seconds=10)
 def generate_seed_data():
@@ -127,16 +148,15 @@ def generate_seed_data():
 
 
 @task(name="upload-to-gcs", retries=3, retry_delay_seconds=30)
-def upload_files_to_gcs(data_dir: Path):
+def upload_files_to_gcs(data_dir: Path, env: str = "dev"):
     """
     Upload les fichiers de données brutes vers Google Cloud Storage.
     
     Cette tâche transfère tous les fichiers générés vers le bucket GCS
-    d'ingestion. Les fichiers sont organisés avec un préfixe pour faciliter
-    leur gestion et leur traçabilité dans le bucket.
+    d'ingestion correspondant à l'environnement.
     
     Architecture GCS :
-        Bucket : test-terraform-473818-ingested-data
+        Bucket : {project_id}-ingested-data-{env}
         └── raw_data/
             ├── contents.csv
             ├── users.csv
@@ -154,6 +174,7 @@ def upload_files_to_gcs(data_dir: Path):
     
     Args:
         data_dir: Chemin vers le dossier contenant les fichiers à uploader
+        env: Environnement cible (dev ou prod)
         
     Returns:
         dict: Métadonnées sur les fichiers uploadés (nom, taille, URI GCS)
@@ -164,12 +185,30 @@ def upload_files_to_gcs(data_dir: Path):
     logger = get_run_logger()
     
     run_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    
+    # Détermination du Project ID
+    # Priorité : 
+    # 1. Terraform Outputs (cohérence infrastructure)
+    # 2. Variable d'environnement (runtime config)
+    # 3. Fallback valeur par défaut (deprecated)
+    project_id = get_terraform_output("project_id")
+    
+    if not project_id:
+        project_id = os.getenv("GCP_PROJECT_ID")
+        
+    if not project_id:
+        # Fallback temporaire si rien n'est configuré
+        # TODO: À supprimer une fois la config stabilisée
+        logger.warning("Project ID introuvable dans terraform-outputs.json ou variables d'env.")
+        logger.warning("Utilisation de la valeur par défaut (hardcodée).")
+        project_id = "test-terraform-473818"
 
-    logger.info(f"Démarrage de l'upload vers GCS...")
-    logger.info(f"Bucket cible : gs://{GCS_BUCKET_NAME}/{GCS_PREFIX}")
+    bucket_name = f"{project_id}-ingested-data-{env}"
+
+    logger.info(f"Démarrage de l'upload vers GCS (env={env})...")
+    logger.info(f"Bucket cible : gs://{bucket_name}/{GCS_PREFIX}")
     
     # Tentative de chargement du bloc GCP Credentials
-    # Ce bloc centralise les credentials dans Prefect Cloud
     storage_client = None
     try:
         logger.info("Tentative de chargement du bloc 'gcp-credentials'...")
@@ -191,10 +230,14 @@ def upload_files_to_gcs(data_dir: Path):
     
     # Récupération du bucket
     try:
-        bucket = storage_client.bucket(GCS_BUCKET_NAME)
-        logger.info(f"Bucket '{GCS_BUCKET_NAME}' accessible")
+        bucket = storage_client.bucket(bucket_name)
+        # Check if bucket exists (lightweight check)
+        if not bucket.exists():
+             logger.error(f"Le bucket '{bucket_name}' n'existe pas ou est inaccessible.")
+             raise Exception(f"Bucket not found: {bucket_name}")
+        logger.info(f"Bucket '{bucket_name}' accessible")
     except Exception as e:
-        logger.error(f"Impossible d'accéder au bucket '{GCS_BUCKET_NAME}': {e}")
+        logger.error(f"Impossible d'accéder au bucket '{bucket_name}': {e}")
         logger.error("Vérifiez que le bucket existe et que vous avez les permissions nécessaires")
         raise
     
@@ -215,7 +258,7 @@ def upload_files_to_gcs(data_dir: Path):
         
         logger.info(f"Upload de {filename}...")
         logger.info(f"  - Source locale : {file_path}")
-        logger.info(f"  - Destination GCS : gs://{GCS_BUCKET_NAME}/{gcs_path}")
+        logger.info(f"  - Destination GCS : gs://{bucket_name}/{gcs_path}")
         
         try:
             # Création du blob (objet GCS) et upload
@@ -228,7 +271,7 @@ def upload_files_to_gcs(data_dir: Path):
             
             uploaded_files.append({
                 "filename": filename,
-                "gcs_uri": f"gs://{GCS_BUCKET_NAME}/{gcs_path}",
+                "gcs_uri": f"gs://{bucket_name}/{gcs_path}",
                 "size_bytes": file_size,
                 "size_mb": round(file_size / (1024 * 1024), 2)
             })
@@ -245,7 +288,7 @@ def upload_files_to_gcs(data_dir: Path):
     logger.info(f"  - Taille totale : {round(total_size / (1024 * 1024), 2)} MB")
     
     return {
-        "bucket": GCS_BUCKET_NAME,
+        "bucket": bucket_name,
         "prefix": GCS_PREFIX,
         "files": uploaded_files,
         "total_files": len(uploaded_files),
@@ -254,7 +297,7 @@ def upload_files_to_gcs(data_dir: Path):
 
 
 @flow(name="refill-bucket-flow", log_prints=True)
-def refill_bucket_flow():
+def refill_bucket_flow(env: str = "dev"):
     """
     Flow principal : Génère les données de seed et les upload vers GCS.
     
@@ -302,10 +345,13 @@ def refill_bucket_flow():
         
         # Déclenchement manuel via l'UI ou la CLI
         prefect deployment run refill-bucket-flow/refill-bucket-weekly
+        
+    Returns:
+        env: Environnement cible (dev ou prod). Définit quel bucket utiliser.
     """
     logger = get_run_logger()
     
-    logger.info("Démarrage du flow de remplissage du bucket GCS")
+    logger.info(f"Démarrage du flow de remplissage du bucket GCS (env={env})")
     logger.info("=" * 60)
     
     # Étape 1 : Génération des données de seed
@@ -315,9 +361,9 @@ def refill_bucket_flow():
     logger.info(f"Données générées dans : {data_dir}")
     
     # Étape 2 : Upload vers GCS
-    logger.info("\nÉTAPE 2/2 : Upload des données vers Google Cloud Storage")
+    logger.info(f"\nÉTAPE 2/2 : Upload des données vers Google Cloud Storage ({env})")
     logger.info("-" * 60)
-    upload_result = upload_files_to_gcs(data_dir)
+    upload_result = upload_files_to_gcs(data_dir, env=env)
     
     # Résumé final
     logger.info("\n" + "=" * 60)
@@ -333,10 +379,11 @@ def refill_bucket_flow():
         logger.info(f"    URI : {file_info['gcs_uri']}")
     
     logger.info("\nProchaine étape : Exécuter le pipeline dbt pour transformer ces données")
-    logger.info("Commande : uv run python prefect_flows/pipeline.py")
+    logger.info(f"Commande : uv run python prefect_flows/pipeline.py --target {env}")
     
     return {
         "status": "success",
+        "env": env,
         "data_directory": str(data_dir),
         "gcs_upload": upload_result
     }
@@ -345,19 +392,21 @@ def refill_bucket_flow():
 if __name__ == "__main__":
     """
     Point d'entrée pour l'exécution locale du flow.
-    
-    Usage :
-        uv run python prefect_flows/refill_bucket.py
+    Supporte l'argument --env pour choisir l'environnement.
     """
+    parser = argparse.ArgumentParser(description="Refill bucket flow")
+    parser.add_argument("--env", default="dev", help="Environment (dev or prod)")
+    args = parser.parse_args()
+
     # Exécution locale du flow
-    result = refill_bucket_flow()
+    result = refill_bucket_flow(env=args.env)
     
     print("\n" + "=" * 60)
     print("RÉSUMÉ DE L'EXÉCUTION")
     print("=" * 60)
     print(f"Statut : {result['status']}")
+    print(f"Env : {result['env']}")
     print(f"Données générées : {result['data_directory']}")
     print(f"Fichiers uploadés : {result['gcs_upload']['total_files']}")
     print(f"Taille totale : {result['gcs_upload']['total_size_mb']} MB")
     print("=" * 60)
-

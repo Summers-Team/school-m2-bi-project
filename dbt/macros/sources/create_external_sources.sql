@@ -4,8 +4,9 @@
     Utilise les variables du target (profiles.yml) pour être dynamique
   #}
   
-  {% set bucket_name = target.project ~ '-ingested-data' %}
+  {% set bucket_name = target.project ~ '-ingested-data-' ~ target.name %}
   {% set gcs_prefix = 'raw_data/' %}
+  
   
   {% if target.name in ['dev', 'prod'] %}
     
