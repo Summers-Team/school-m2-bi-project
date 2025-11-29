@@ -83,6 +83,7 @@ jobs:
           cd dbt
           uv run dbt compile --profiles-dir . --target dev
           uv run dbt docs generate --profiles-dir . --target dev
+          uv run python -m dbt_erd --model-path models --config erd_config.yml
       
       - name: Prepare documentation for GitHub Pages
         run: |
@@ -91,6 +92,8 @@ jobs:
           cp dbt/target/manifest.json public/
           cp dbt/target/catalog.json public/
           cp dbt/target/graph.gpickle public/ 2>/dev/null || true
+          cp dbt/assets/img/mart/core/fct__viewings/fct__viewings_model.html public/
+          cp dbt/assets/img/mart/core/fct__viewings/fct__viewings_model.mmd public/
       
       - name: Setup Pages
         uses: actions/configure-pages@v4
