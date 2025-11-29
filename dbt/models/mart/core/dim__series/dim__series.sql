@@ -48,7 +48,7 @@ base_series_stats AS (
     GROUP BY
         series_name,
         genre,
-        target_age_group,
+        target_age_group
 ),
 
 final AS (
