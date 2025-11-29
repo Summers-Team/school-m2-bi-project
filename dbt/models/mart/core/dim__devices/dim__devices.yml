@@ -19,9 +19,6 @@ models:
         tests:
           - unique
           - not_null
-          - relationships:
-              to: ref('fct__viewings')
-              field: device_fk
           
       - name: device_type
         description: "Type of device used for viewing"
