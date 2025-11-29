@@ -61,7 +61,7 @@ def run_dbt_models(target: str = "dev"):
         logger.info(f"☁️  Exécution via le profil Prefect reconstruit pour {target}")
         result = DbtCoreOperation(
             project_dir=project_dir,
-            commands=["dbt run --threads 4"],
+            commands=[f"dbt run --threads 4 --target {target}"],
             dbt_cli_profile=profile,
             overwrite_profiles=True,
         ).run()
@@ -156,7 +156,7 @@ def test_dbt_models(target: str = "dev"):
         logger.info(f"☁️  Exécution via le profil Prefect reconstruit pour {target}")
         result = DbtCoreOperation(
             project_dir=project_dir,
-            commands=["dbt test"],
+            commands=[f"dbt test --target {target}"],
             dbt_cli_profile=profile,
             overwrite_profiles=True,
         ).run()
