@@ -24,6 +24,7 @@ deployments:
           script: |
             pip install uv
             uv pip install -r requirements.txt
+            cd dbt && dbt deps
           directory: "{{ git-clone.directory }}"
 
     # flow-specific fields
@@ -57,6 +58,7 @@ deployments:
           script: |
             pip install uv
             uv pip install -r requirements.txt
+            cd dbt && dbt deps
           directory: "{{ git-clone.directory }}"
 
     # flow-specific fields
