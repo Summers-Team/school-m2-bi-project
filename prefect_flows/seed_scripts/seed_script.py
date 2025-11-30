@@ -12,11 +12,11 @@ fake = Faker('fr_FR')
 
 # --- CONFIGURATION ---
 # Définissez ici le nombre d'enregistrements à générer pour chaque fichier
-NUM_SERIES = 10  # Nombre de séries différentes
-NUM_CONTENTS = 45  # Nombre total d'épisodes
-NUM_USERS = 500
-NUM_VIEWING_LOGS = 15000
-NUM_SOCIAL_MENTIONS = 800
+NUM_SERIES = 30  # Nombre de séries différentes
+NUM_CONTENTS = 135  # Nombre total d'épisodes
+NUM_USERS = 1500
+NUM_VIEWING_LOGS = 45000
+NUM_SOCIAL_MENTIONS = 2400
 OUTPUT_DIR = "raw_data"  # Dossier où les fichiers seront sauvegardés
 STATIC_DATA_PATH = os.path.join(OUTPUT_DIR, "static_data", "movies_and_series_titles.csv")
 
@@ -192,7 +192,7 @@ def generate_viewing_logs(n: int, user_ids: list, content_durations: dict) -> li
     
     # Plage temporelle : le mois dernier
     end_date = datetime.now()
-    start_date = end_date - timedelta(days=30)
+    start_date = end_date - timedelta(days=90)
     
     # Configuration : environ 8% des logs en binge-watching
     # Une session de binge = 3-6 épisodes, moyenne de 4
