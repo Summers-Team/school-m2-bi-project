@@ -4,8 +4,8 @@ models:
   # =============================================================================
   # dim_series : Series dimension table for star schema
   # =============================================================================
-  - name: dim_series
-    description: |
+  - name: dim__series
+    description: |-
       Series dimension table containing information about series available on BigMedia.
       
       This dimension is part of the star schema and will be joined to the fact table

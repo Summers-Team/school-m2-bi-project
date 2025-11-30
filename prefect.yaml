@@ -18,6 +18,7 @@ deployments:
     pull:
       - prefect.deployments.steps.git_clone:
           id: git-clone
+          branch: main
           branch: "{{ prefect.variables.branch_name }}"
           repository: https://github.com/Bafbi/projet-m2-bi.git
       - prefect.deployments.steps.run_shell_script:
