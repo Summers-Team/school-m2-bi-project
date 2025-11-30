@@ -54,6 +54,6 @@ resource "google_project_iam_member" "sa_bq_jobuser" {
 
 resource "google_project_iam_member" "sa_storage_admin" {
   project = var.project_id
-  role    = "roles/storage.objectAdmin"
+  role    = "roles/storage.admin"
   member  = "serviceAccount:${google_service_account.dbt_sa.email}"
 }

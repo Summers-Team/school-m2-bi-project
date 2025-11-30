@@ -14,5 +14,6 @@ SELECT
     production_type,
     release_date,
     duration_minutes,
-    CAST(production_cost_euros AS INT64) AS production_cost_euros
+    CAST(production_cost_euros AS INT64) AS production_cost_euros,
+    CAST(ingestion_date AS DATE) as ingestion_date
 FROM {{ source('raw_gcs', 'raw_contents') }}

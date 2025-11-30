@@ -77,7 +77,7 @@ jobs:
         run: |
           cd dbt
           uv run dbt deps
-      
+
       - name: Generate dbt documentation
         run: |
           cd dbt
@@ -97,7 +97,7 @@ jobs:
           mkdir -p public/dbt/assets/img/mart/core/fct__viewings/
           cp dbt/assets/img/mart/core/fct__viewings/fct__viewings_model.html public/dbt/assets/img/mart/core/fct__viewings/
           cp dbt/assets/img/mart/core/fct__viewings/fct__viewings_model.mmd public/dbt/assets/img/mart/core/fct__viewings/
-      
+     
       - name: Setup Pages
         uses: actions/configure-pages@v4
       
@@ -109,4 +109,3 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-
