@@ -60,3 +60,6 @@ models:
         description: "Timestamp de publication du post"
         tests:
           - not_null
+
+      - name: ingestion_date
+        description: "Date d'ingestion de la donnée (partition Hive)"

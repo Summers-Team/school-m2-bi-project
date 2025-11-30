@@ -7,6 +7,13 @@ WITH source AS (
     SELECT * FROM {{ ref('stg__users') }}
 ),
 
+-- SNAPSHOT STRATEGY
+latest_source AS (
+    SELECT *
+    FROM source
+    WHERE ingestion_date = (SELECT MAX(ingestion_date) FROM source)
+),
+
 cleaned AS (
     SELECT
         -- Primary key
@@ -18,10 +25,11 @@ cleaned AS (
         CAST(age AS INT64) AS age,
         TRIM(subscription_type) AS subscription_type,
         
-        -- Loading metadata
+        -- Technical metadata
+        ingestion_date,
         CURRENT_TIMESTAMP() AS _loaded_at
         
-    FROM source
+    FROM latest_source
     WHERE 
         -- Validation: filter invalid users
         user_id IS NOT NULL
@@ -29,13 +37,11 @@ cleaned AS (
         AND age IS NOT NULL
 ),
 
--- Deduplication: keep only one occurrence per user_id
--- In case of duplicates across multiple runs, keep the version with the oldest registration date
--- (business logic: we want to keep the first registration)
+-- Deduplication interne
 deduplicated AS (
     SELECT *
     FROM cleaned
-    QUALIFY ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY registration_date ASC, country) = 1
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY registration_date ASC) = 1
 )
 
 SELECT * FROM deduplicated

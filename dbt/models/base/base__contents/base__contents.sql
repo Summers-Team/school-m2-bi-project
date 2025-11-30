@@ -7,6 +7,13 @@ WITH source AS (
     SELECT * FROM {{ ref('stg__contents') }}
 ),
 
+-- SNAPSHOT STRATEGY
+latest_source AS (
+    SELECT *
+    FROM source
+    WHERE ingestion_date = (SELECT MAX(ingestion_date) FROM source)
+),
+
 cleaned AS (
     SELECT
         TRIM(content_id) AS content_id,
@@ -20,18 +27,17 @@ cleaned AS (
         release_date,
         CAST(duration_minutes AS INT64) AS duration_minutes,
         CAST(production_cost_euros AS INT64) AS production_cost_euros,
+        ingestion_date,
         CURRENT_TIMESTAMP() AS _loaded_at
-    FROM source
+    FROM latest_source
     WHERE content_id IS NOT NULL
 ),
 
--- Deduplication: keep only one occurrence per content_id
--- In case of duplicates across multiple runs, keep the content with the most recent release date
+-- Deduplication interne
 deduplicated AS (
     SELECT *
     FROM cleaned
-    QUALIFY ROW_NUMBER() OVER (PARTITION BY content_id ORDER BY release_date DESC, title) = 1
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY content_id ORDER BY release_date DESC) = 1
 )
 
 SELECT * FROM deduplicated
-

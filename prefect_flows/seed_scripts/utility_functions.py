@@ -15,19 +15,18 @@ def generate_age() -> int:
     Génère un âge selon une distribution spécifique.
     
     Returns:
-        int: Un âge entre 13 et 70 ans
+        int: Un âge entre 3 et 70 ans
     """
     # Définition des tranches d'âge avec leurs poids respectifs
     age_ranges = [
-        (13, 16, 0.01),      # Quasiment aucun avant 16 ans (1%)
-        (17, 25, 0.55),      # Grande majorité entre 17 et 25 ans (55%)
-        (26, 30, 0.22),      # Un peu moins entre 25 et 30 ans (22%)
-        (31, 35, 0.10),      # De moins en moins de 30 à 50 ans
-        (36, 40, 0.06),
-        (41, 45, 0.04),
-        (46, 50, 0.015),     # Presque pas au-delà de 50 ans
-        (51, 60, 0.004),
-        (61, 70, 0.001)      # Jusqu'à 70 max
+        (3, 5, 0.10),        # Enfants 3-5 (10%)
+        (6, 8, 0.17),        # Enfants 6-8 (17%)
+        (9, 12, 0.32),       # Enfants 9-12 (32%)
+        (13, 17, 0.26),      # Ados (26%)
+        (18, 25, 0.07),      # Jeunes adultes (7%)
+        (26, 35, 0.05),      # Adultes (5%)
+        (36, 50, 0.02),      # Adultes mûrs (2%)
+        (51, 70, 0.01)       # Seniors (6%)
     ]
     
     # Selection of a range according to the weights

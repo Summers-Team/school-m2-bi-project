@@ -188,8 +188,9 @@ def upload_files_to_gcs(data_dir: Path, env: str = "dev"):
 
     logger = get_run_logger()
     
-    run_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    
+    # Format YYYY-MM-DD pour Hive Partitioning et idempotence journalière
+    ingestion_date = datetime.now().strftime("%Y-%m-%d")
+
     # Détermination du Project ID
     # Priorité : 
     # 1. Terraform Outputs (cohérence infrastructure)
@@ -256,9 +257,9 @@ def upload_files_to_gcs(data_dir: Path, env: str = "dev"):
             logger.warning(f"Fichier ignoré (non trouvé) : {filename}")
             continue
         
-        # Construction du chemin GCS avec préfixe
-        # Ex: raw_data/contents.csv
-        gcs_path = f"{GCS_PREFIX}{run_timestamp}/{filename}"
+        # Construction du chemin GCS avec préfixe Hive Partitioning
+        # Ex: raw_data/ingestion_date=2023-11-30/contents.csv
+        gcs_path = f"{GCS_PREFIX}ingestion_date={ingestion_date}/{filename}"
         
         logger.info(f"Upload de {filename}...")
         logger.info(f"  - Source locale : {file_path}")

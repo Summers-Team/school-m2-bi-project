@@ -73,3 +73,6 @@ models:
         description: "Production cost in euros"
         tests:
           - not_null
+
+      - name: ingestion_date
+        description: "Date d'ingestion de la donnée (partition Hive)"

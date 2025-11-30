@@ -11,5 +11,6 @@ SELECT
     end_timestamp,
     watch_duration_seconds,
     device_type,
-    os
+    os,
+    CAST(ingestion_date AS DATE) as ingestion_date
 FROM {{ source('raw_gcs', 'raw_viewing_logs') }}
