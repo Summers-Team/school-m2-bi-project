@@ -18,7 +18,8 @@ cleaned AS (
         CAST(age AS INT64) AS age,
         TRIM(subscription_type) AS subscription_type,
         
-        -- Loading metadata
+        -- Technical metadata
+        ingestion_date,
         CURRENT_TIMESTAMP() AS _loaded_at
         
     FROM source
@@ -30,12 +31,14 @@ cleaned AS (
 ),
 
 -- Deduplication: keep only one occurrence per user_id
--- In case of duplicates across multiple runs, keep the version with the oldest registration date
--- (business logic: we want to keep the first registration)
+-- Strategy: Latest ingestion wins (ingestion_date DESC)
 deduplicated AS (
     SELECT *
     FROM cleaned
-    QUALIFY ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY registration_date ASC, country) = 1
+    QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY user_id 
+        ORDER BY ingestion_date DESC, registration_date ASC
+    ) = 1
 )
 
 SELECT * FROM deduplicated

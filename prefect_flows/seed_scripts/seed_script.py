@@ -287,7 +287,7 @@ def generate_social_media_mentions(n: int, content_mapping: list[dict]) -> list[
     
     # Plage temporelle : le mois dernier
     end_date = datetime.now()
-    start_date = end_date - timedelta(days=30)
+    start_date = end_date - timedelta(days=90)
 
     comment_templates = [
         "Mon fils adore {title} ! C'est sa nouvelle série préférée.",

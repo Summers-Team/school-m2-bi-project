@@ -30,7 +30,8 @@ cleaned AS (
         -- Publication timestamp
         publication_timestamp,
         
-        -- Loading metadata
+        -- Technical metadata
+        ingestion_date,
         CURRENT_TIMESTAMP() AS _loaded_at
         
     FROM source
@@ -42,12 +43,14 @@ cleaned AS (
 ),
 
 -- Deduplication: keep only one occurrence per mention_id
--- In case of duplicates across multiple runs, keep the mention with the most recent publication timestamp
--- (business logic: we want to keep the most recent version of a mention)
+-- Strategy: Latest ingestion wins (ingestion_date DESC)
 deduplicated AS (
     SELECT *
     FROM cleaned
-    QUALIFY ROW_NUMBER() OVER (PARTITION BY mention_id ORDER BY publication_timestamp DESC, likes_count DESC) = 1
+    QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY mention_id 
+        ORDER BY ingestion_date DESC, publication_timestamp DESC
+    ) = 1
 )
 
 SELECT * FROM deduplicated

@@ -17,6 +17,7 @@ cleaned AS (
         CAST(watch_duration_seconds AS INT64) AS watch_duration_seconds,
         LOWER(TRIM(device_type)) AS device_type,
         LOWER(TRIM(os)) AS os,
+        ingestion_date,
         CURRENT_TIMESTAMP() AS _loaded_at
     FROM source
     WHERE 
@@ -25,12 +26,14 @@ cleaned AS (
 ),
 
 -- Deduplication: keep only one occurrence per session_id
--- In case of duplicates across multiple runs, keep the session with the most recent start timestamp
--- (business logic: we want to keep the most recent version of a session)
+-- Strategy: Latest ingestion wins (ingestion_date DESC)
 deduplicated AS (
     SELECT *
     FROM cleaned
-    QUALIFY ROW_NUMBER() OVER (PARTITION BY session_id ORDER BY start_timestamp DESC, end_timestamp DESC) = 1
+    QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY session_id 
+        ORDER BY ingestion_date DESC, start_timestamp DESC
+    ) = 1
 )
 
 SELECT * FROM deduplicated
