@@ -7,6 +7,13 @@ WITH source AS (
     SELECT * FROM {{ ref('stg__users') }}
 ),
 
+-- SNAPSHOT STRATEGY
+latest_source AS (
+    SELECT *
+    FROM source
+    WHERE ingestion_date = (SELECT MAX(ingestion_date) FROM source)
+),
+
 cleaned AS (
     SELECT
         -- Primary key
@@ -22,7 +29,7 @@ cleaned AS (
         ingestion_date,
         CURRENT_TIMESTAMP() AS _loaded_at
         
-    FROM source
+    FROM latest_source
     WHERE 
         -- Validation: filter invalid users
         user_id IS NOT NULL
@@ -30,15 +37,11 @@ cleaned AS (
         AND age IS NOT NULL
 ),
 
--- Deduplication: keep only one occurrence per user_id
--- Strategy: Latest ingestion wins (ingestion_date DESC)
+-- Deduplication interne
 deduplicated AS (
     SELECT *
     FROM cleaned
-    QUALIFY ROW_NUMBER() OVER (
-        PARTITION BY user_id 
-        ORDER BY ingestion_date DESC, registration_date ASC
-    ) = 1
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY registration_date ASC) = 1
 )
 
 SELECT * FROM deduplicated

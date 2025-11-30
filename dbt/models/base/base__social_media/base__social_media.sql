@@ -7,6 +7,13 @@ WITH source AS (
     SELECT * FROM {{ ref('stg__social_media_mentions') }}
 ),
 
+-- SNAPSHOT STRATEGY
+latest_source AS (
+    SELECT *
+    FROM source
+    WHERE ingestion_date = (SELECT MAX(ingestion_date) FROM source)
+),
+
 cleaned AS (
     SELECT
         -- Primary key
@@ -34,7 +41,7 @@ cleaned AS (
         ingestion_date,
         CURRENT_TIMESTAMP() AS _loaded_at
         
-    FROM source
+    FROM latest_source
     WHERE 
         -- Validation: filter invalid mentions
         mention_id IS NOT NULL
@@ -42,16 +49,11 @@ cleaned AS (
         AND content_title_mentioned IS NOT NULL
 ),
 
--- Deduplication: keep only one occurrence per mention_id
--- Strategy: Latest ingestion wins (ingestion_date DESC)
+-- Deduplication interne
 deduplicated AS (
     SELECT *
     FROM cleaned
-    QUALIFY ROW_NUMBER() OVER (
-        PARTITION BY mention_id 
-        ORDER BY ingestion_date DESC, publication_timestamp DESC
-    ) = 1
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY mention_id ORDER BY publication_timestamp DESC) = 1
 )
 
 SELECT * FROM deduplicated
-

@@ -190,7 +190,7 @@ def upload_files_to_gcs(data_dir: Path, env: str = "dev"):
     
     # Format YYYY-MM-DD pour Hive Partitioning et idempotence journalière
     ingestion_date = datetime.now().strftime("%Y-%m-%d")
-    
+
     # Détermination du Project ID
     # Priorité : 
     # 1. Terraform Outputs (cohérence infrastructure)
