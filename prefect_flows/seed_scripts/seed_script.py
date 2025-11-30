@@ -95,7 +95,7 @@ def generate_contents(n: int) -> tuple[pd.DataFrame, dict, list]:
                 production_cost = random.randint(metadata["cost_min"], metadata["cost_max"])
                 
                 # Date de sortie : progressive pour chaque saison
-                release_date = metadata["series_start_date"] + timedelta(days=(season - 1) * 180 + episode * 7)
+                release_date = metadata["series_start_date"] + timedelta(days=(season - 1) * 30 + episode * 7)
                 
                 # Identifiant unique et normalisé
                 content_id = f"{series_name.lower().replace(' ', '_').replace(',', '').replace(':', '')}_s{season:02d}e{episode:02d}"
