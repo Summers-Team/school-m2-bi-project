@@ -57,7 +57,7 @@ performance:
 
 # File paths
 paths:
-  asset_base: "school-m2-bi-project/dbt/assets/img"
+  asset_base: "assets/img"
   yaml_extension: ".yml"
 
 # Relationship settings
