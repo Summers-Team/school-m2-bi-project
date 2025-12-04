@@ -306,3 +306,6 @@ raw_data/
 
 # UML assets
 dbt/assets/img/mart/core
+
+# Presentation Assests
+presentation/assets/
