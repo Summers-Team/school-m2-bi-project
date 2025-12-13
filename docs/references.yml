@@ -1,0 +1,146 @@
+gcp:
+  type: web
+  title: Google Cloud Platform
+  url: https://cloud.google.com/
+  date: 2025-11-30
+
+powerbi:
+  type: web
+  title: Microsoft Power BI
+  url: https://powerbi.microsoft.com/
+  date: 2025-11-30
+
+elt:
+  type: web
+  title: "ELT vs ETL: What's the Difference?"
+  url: https://www.ibm.com/topics/elt
+  date: 2025-11-30
+
+swot: 
+  type: web
+  title: Comment réaliser une analyse SWOT ?
+  url: 
+    value: https://neplim.fr/formation-marketing/strategique/analyse-swot
+    date: 2025-10-01
+
+repo:
+  type: web
+  title: "Projet M2 BI - Infrastructure as Code & ELT"
+  url: https://github.com/Bafbi/projet-m2-bi
+
+cnil-consentement:
+  type: web
+  title: "Consentement (RGPD)"
+  author: "Commission Nationale de l'Informatique et des Libertés (CNIL)"
+  url:
+    value: "https://www.cnil.fr/fr/definition/consentement"
+    date: 2025-10-04
+
+cnil-anonymisation-pseudo:
+  type: web
+  title: "Anonymisation et pseudonymisation : deux méthodes, une grande différence"
+  author: "Village de la Justice"
+  url:
+    value: "https://www.village-justice.com/articles/anonymisation-pseudonymisation-deux-methodes-une-grande-difference-dans-cadre-rgpd,49893.html"
+    date: 2025-10-04
+
+cnil-anonymisation:
+  type: web
+  title: "L'anonymisation de données personnelles"
+  author: "Commission Nationale de l'Informatique et des Libertés (CNIL)"
+  url:
+    value: "https://www.cnil.fr/fr/lanonymisation-de-donnees-personnelles"
+    date: 2025-10-04
+
+cnil-donnees-anonymes:
+  type: web
+  title: "RGPD : les règles de l’anonymisation des données"
+  author: "Leto.legal"
+  url:
+    value: "https://www.leto.legal/fr/ressources/rgpd-les-regles-de-lanonymisation-des-donnees"
+    date: 2025-10-04
+
+cnil-bases-legales:
+  type: web
+  title: "Qu'est-ce qu'une base légale ou base juridique ?"
+  author: "Commission Nationale de l'Informatique et des Libertés (CNIL)"
+  url:
+    value: "https://www.cnil.fr/fr/definition/base-legale-ou-base-juridique"
+    date: 2025-10-04
+
+cnil-mineurs:
+  type: web
+  title: "RGPD et données personnelles des mineurs"
+  author: "Deshoulières Avocats"
+  url:
+    value: "https://www.deshoulieres-avocats.com/rgpd-et-donnees-personnelles-des-mineurs/"
+    date: 2025-10-04
+
+cnil-majorite-numerique:
+  type: web
+  title: "Le RGPD et les mineurs"
+  author: "Agence RGPD"
+  url:
+    value: "https://www.agence-rgpd.com/le-rgpd-et-les-mineurs/"
+    date: 2025-10-04
+
+haas-avocats-mineurs:
+  type: web
+  title: "RGPD : quelle protection pour les données personnelles des mineurs ?"
+  author: "Haas Avocats"
+  url:
+    value: "https://www.haas-avocats.com/actualite-juridique/rgpd-protection-donnees-personnelles-mineurs/"
+    date: 2025-10-04
+
+cnil-reseaux-sociaux:
+  type: web
+  title: "Communication politique : quelles règles pour la collecte de données sur les réseaux sociaux ?"
+  author: "Commission Nationale de l'Informatique et des Libertés (CNIL)"
+  url:
+    value: "https://www.cnil.fr/fr/communication-politique-quelles-regles-pour-la-collecte-de-donnees-sur-les-reseaux-sociaux"
+    date: 2025-10-04
+
+prefect:
+  type: web
+  title: "Prefect"
+  author: "Prefect Technologies Inc."
+  url: "https://www.prefect.io/"
+  date: 2025-11-30
+
+google-cloud:
+  type: web
+  title: "Google Cloud"
+  author: "Google LLC"
+  url: "https://cloud.google.com/why-google-cloud"
+
+google-bigquery:
+  type: web
+  title: "Google BigQuery"
+  author: "Google LLC"
+  url: "https://cloud.google.com/bigquery"
+
+star-schema1:
+  type: web
+  title: "STAR schema"
+  author: "Wikipedia"
+  url: "https://fr.wikipedia.org/wiki/%C3%89toile_(mod%C3%A8le_de_donn%C3%A9es)"
+
+star-schema2:
+  type: web
+  title: "Qu'est-ce qu'un schéma en étoile ? Avantages et inconvénients"
+  author: "Astera Équipe Marketing"
+  url: 
+    value: "https://www.astera.com/fr/knowledge-center/star-schema/"
+
+terraform:
+  type: web
+  title: "Terraform"
+  author: "HashiCorp"
+  url: "https://developer.hashicorp.com/terraform"
+
+dbt:
+  type: web
+  title: "Data Build Tool"
+  author: "dbt Labs"
+  url: "https://www.getdbt.com/"
+  date: 2025-11-30
