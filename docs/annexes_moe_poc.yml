@@ -1,0 +1,53 @@
+prefect:
+  type: web
+  title: "Prefect"
+  author: "Prefect Technologies Inc."
+  url: "https://www.prefect.io/"
+
+google-cloud:
+  type: web
+  title: "Google Cloud"
+  author: "Google LLC"
+  url: "https://cloud.google.com/why-google-cloud"
+
+google-bigquery:
+  type: web
+  title: "Google BigQuery"
+  author: "Google LLC"
+  url: "https://cloud.google.com/bigquery"
+
+star-schema1:
+  type: web
+  title: "STAR schema"
+  author: 
+  url: "https://fr.wikipedia.org/wiki/%C3%89toile_(mod%C3%A8le_de_donn%C3%A9es)"
+
+star-schema2:
+  type: web
+  title: "Qu'est-ce qu'un schéma en étoile ? Avantages et inconvénients"
+  author: "Astera Équipe Marketing"
+  url: 
+    value: "https://www.astera.com/fr/knowledge-center/star-schema/"
+
+power-bi:
+  type: web
+  title: "Power BI"
+  author: "Microsoft Corporation"
+  url: "https://www.microsoft.com/fr-fr/power-platform/products/power-bi"
+  
+terraform:
+  type: web
+  title: "Terraform"
+  author: "HashiCorp"
+  url: "https://developer.hashicorp.com/terraform"
+
+dbt:
+  type: web
+  title: "Data Build Tool"
+  author: "dbt Labs"
+  url: "https://www.getdbt.com/"
+elt:
+  type: web
+  title: "ELT vs ETL: What's the Difference?"
+  url: https://www.ibm.com/topics/elt
+  date: 2025-11-30

@@ -142,27 +142,27 @@ Le POC évaluera des outils issus des catégories suivantes, identifiées comme 
 
 
 
-- *Collecte et intégration de données (ELT)* : Outils pour extraire les données des systèmes sources (logs, API réseaux sociaux) et les charger dans notre base de données.
+- *Collecte et intégration de données (ELT)* : Outils pour extraire les données des systèmes sources (logs, API réseaux sociaux) et les charger dans notre base de données @elt.
 
-  - *Prefect est utilisé pour orchestrer des scripts Python personnalisés qui gèrent l'extraction, le chargement et la transformation des données.*.
+  - *Pour le POC, un script Python (`seed_script.py`) génère des données synthétiques réalistes (Faker). Prefect orchestre ensuite l'ingestion de ces données vers le Data Lake @prefect.*.
 
 
 
 - *Stockage Big Data* : Solution capable de stocker des données structurées et non structurées.
 
-  - *Google Cloud Storage (GCS) est utilisé comme Data Lake pour le stockage des données brutes (couche Bronze), et Google BigQuery comme Data Warehouse pour les données modélisées (couche Gold).*
+  - *Google Cloud Storage (GCS) est utilisé comme Data Lake pour le stockage des données brutes (couche Bronze), et Google BigQuery comme Data Warehouse pour les données modélisées (couche Gold) @gcp @google-bigquery.*
 
 
 
-- *Traitement de données* : Transformation des données brut vers des données nettoyées, en schéma en étoile (STAR schema).
+- *Traitement de données* : Transformation des données brut vers des données nettoyées, en schéma en étoile (STAR schema) @star-schema1.
 
-  - *Prefect est utilisé pour orchestrer ces workflows dbt, qui sont ensuite exécuté sur BigQuery.*
+  - *Prefect est utilisé pour orchestrer ces workflows dbt, qui sont ensuite exécuté sur BigQuery @dbt.*
 
 
 
 - *Data Visualisation* : Plateforme pour créer les tableaux de bord et les KPIs à destination des directions métiers.
 
-  - *Power BI est l'outil de BI choisi pour la création des tableaux de bord et la visualisation des KPIs.*
+  - *Power BI est l'outil de BI choisi pour la création des tableaux de bord et la visualisation des KPIs @powerbi.*
 
 == Architecture technique
 
@@ -176,9 +176,9 @@ L'architecture du POC consiste en un pipeline de données centralisé qui ingèr
 
   Le pipeline de données est orchestré par *Prefect*. 
 
-  1. Les données brutes (fichiers `JSON` et `CSV`) sont extraites des systèmes sources.
+  1. Les données brutes (fichiers `JSON` et `CSV`) sont générées par un script Python (`seed_script.py`) simulant les systèmes sources.
 
-  2. Des scripts Python chargent ces fichiers dans un Data Lake sur *Google Cloud Storage* (couche Bronze).
+  2. Ce script charge ensuite ces fichiers dans un Data Lake sur *Google Cloud Storage* (couche Bronze).
 
   3. *dbt* est ensuite utilisé pour transformer, nettoyer et modéliser les données brutes en un schéma en étoile optimisé pour l'analyse.
 
@@ -212,7 +212,7 @@ Le périmètre du POC se concentre sur les jeux de données ci-dessous pour illu
 
   [`users.csv`], [Profil anonymisé des utilisateurs VoD.], [CSV], [Permet l'analyse par pays, tranche d'âge et ancienneté.],
 
-  [`social_media_mentions.json`], [Mentions issues des réseaux sociaux.], [JSON (1 mention par ligne)], [Score de sentiment simulé pour le POC, futur NLP à intégrer.]
+  [`social_media_ mentions.json`], [Mentions issues des réseaux sociaux.], [JSON (1 mention par ligne)], [Score de sentiment simulé pour le POC, futur NLP à intégrer.]
 
 )
 
@@ -230,23 +230,23 @@ La base de données du POC devra stocker les données brutes extraites des sourc
 
 == Modèle de données
 
-Le modèle de données ci-dessous représente la structure cible simplifiée pour les données qui seront exploitées dans le POC. Il se concentre sur les entités clés : utilisateurs, contenus et événements.
+Le modèle de données ci-dessous représente la structure cible simplifiée pour les données qui seront exploitées dans le POC. Il se concentre sur les entités clés : utilisateurs, contenus, séries et événements.
 
 
 
 #align(center)[
 
-  #image("images/star_schema.png", width: 75%)
+  #image("graphs/star_schema.svg", width: 75%)
+  // [Image: Star Schema Diagram - Manquant]
 
 ]
-
 
 
 Faits marquants :
 
 - `FCT_Viewings` porte les métriques telles que la durée de visionnage, le taux de complétion et l'indicateur de visionnage complet.
 
-- Les dimensions apportent le contexte (profil utilisateur, métadonnées contenu, appareil, calendrier) et facilitent les comparaisons Original BigMedia vs Achat.
+- Les dimensions apportent le contexte (profil utilisateur, métadonnées contenu, série, appareil, calendrier) et facilitent les comparaisons Original BigMedia vs Achat.
 
 
 
@@ -255,35 +255,49 @@ Faits marquants :
 Ce dictionnaire synthétise les champs clés exposés dans la couche Gold et ceux maintenus en staging pour les analyses complémentaires.
 
 #table(
-  columns: (auto, auto, auto),
+  columns: (25%, 35%, 40%),
   stroke: (x: 1pt),
   align: (left, left, left),
   [*Table*], [*Nom du champ*], [*Description*],
   [*FCT_Viewings*], `viewing_sk`, `Clé de substitution de l'événement de visionnage`,
   [*FCT_Viewings*], `user_fk`, `Référence à la dimension utilisateur`,
   [*FCT_Viewings*], `content_fk`, `Référence à la dimension contenu`,
+  [*FCT_Viewings*], `series_fk`, `Référence à la dimension série`,
   [*FCT_Viewings*], `date_fk`, `Référence à la dimension date (format YYYYMMDD)`,
   [*FCT_Viewings*], `device_fk`, `Référence à la dimension appareil`,
   [*FCT_Viewings*], `view_duration_minutes`, `Durée de visionnage convertie en minutes`,
   [*FCT_Viewings*], `completion_rate`, `Ratio durée visionnée / durée totale du contenu`,
   [*FCT_Viewings*], `is_completed_view`, `Indicateur booléen si le visionnage dépasse 90 % du contenu`,
+  [*FCT_Viewings*], `start_timestamp`, `Horodatage de début de visionnage`,
+  [*FCT_Viewings*], `end_timestamp`, `Horodatage de fin de visionnage`,
 )
 
 #table(
-  columns: (auto, auto, auto),
+  columns: (25%, 35%, 40%),
   stroke: (x: 1pt),
   align: (left, left, left),
   [*Table*], [*Nom du champ*], [*Description*],
   [*DIM_Users*], `user_sk`, `Clé de substitution utilisateur`,
   [*DIM_Users*], `user_id`, `Identifiant métier pseudonymisé`,
   [*DIM_Users*], `country`, `Pays de connexion de l'utilisateur`,
-  [*DIM_Users*], `age_group`, `Tranche d'âge déclarée`,
+  [*DIM_Users*], `age`, `Âge de l'utilisateur`,
   [*DIM_Users*], `days_since_registration`, `Ancienneté en jours au moment du chargement`,
   [*DIM_Content*], `content_sk`, `Clé de substitution contenu`,
   [*DIM_Content*], `content_id`, `Identifiant métier du contenu`,
   [*DIM_Content*], `title`, `Titre de l'épisode ou du film`,
-  [*DIM_Content*], `production_type`, `Origine du contenu (Original BigMedia ou Achat)`,
+  [*DIM_Content*], `season_number`, `Numéro de la saison`,
+  [*DIM_Content*], `episode_number`, `Numéro de l'épisode`,
+  [*DIM_Content*], `release_date`, `Date de sortie`,
+  [*DIM_Content*], `release_year`, `Année de sortie`,
   [*DIM_Content*], `duration_minutes`, `Durée du contenu en minutes`,
+  [*DIM_Content*], `production_cost_euros`, `Coût de production en euros`,
+  [*DIM_Series*], `series_sk`, `Clé de substitution série`,
+  [*DIM_Series*], `series_name`, `Nom de la série`,
+  [*DIM_Series*], `genre`, `Genre principal`,
+  [*DIM_Series*], `target_age_group`, `Groupe d'âge cible`,
+  [*DIM_Series*], `production_type`, `Type de production (Original BigMedia ou Achat)`,
+  [*DIM_Series*], `first_release_year`, `Année de première diffusion`,
+  [*DIM_Series*], `total_seasons`, `Nombre total de saisons`,
   [*DIM_Devices*], `device_sk`, `Clé de substitution appareil`,
   [*DIM_Devices*], `device_type`, `Catégorie d'appareil (TV, mobile, etc.)`,
   [*DIM_Devices*], `os`, `Système d'exploitation`,
@@ -293,7 +307,7 @@ Ce dictionnaire synthétise les champs clés exposés dans la couche Gold et ceu
 )
 
 #table(
-  columns: (auto, auto, auto),
+  columns: (30%, 30%, 40%),
   stroke: (x: 1pt),
   align: (left, left, left),
   [*Table staging*], [*Nom du champ*], [*Description*],
@@ -308,36 +322,38 @@ Ce dictionnaire synthétise les champs clés exposés dans la couche Gold et ceu
 Cette section décrit la correspondance entre les champs des fichiers sources et les champs du modèle de données cible pour le POC.
 
 #table(
-  columns: (auto, auto, auto),
+  columns: (35%, 30%, 35%),
   stroke: (x: 1pt),
   align: (left, left, left),
   [*Source brute*], [*Champ cible (staging)*], [*Règle de transformation*],
-  [`viewing_logs.json.user_id`], `stg_viewing_logs.user_id`, `Mapping direct (snake_case conservé)`,
-  [`viewing_logs.json.content_id`], `stg_viewing_logs.content_id`, `Mapping direct`,
-  [`viewing_logs.json.watch_duration_seconds`], `stg_viewing_logs.watch_duration_seconds`, `Mapping direct (type INTEGER)`,
-  [`viewing_logs.json.start_timestamp`], `stg_viewing_logs.start_timestamp`, `Conversion au format TIMESTAMP BigQuery`,
-  [`contents.csv.duration_minutes`], `stg_contents.duration_minutes`, `Mapping direct (type INTEGER)`,
-  [`users.csv.registration_date`], `stg_users.registration_date`, `Conversion au format DATE`,
-  [`users.csv.country`], `stg_users.country`, `Standardisation des codes pays (FR, BE, CH)`,
-  [`social_media_mentions.json.mention_text`], `stg_social_media.mention_text`, `Nettoyage minimal (trim, suppression HTML)`,
-  [`social_media_mentions.json.mention_text`], `stg_social_media.sentiment_score`, `Simulation d'un score 0/1/2 en attendant une librairie NLP`,
+  [`viewing_logs.json.user_id`], `stg_viewing_logs .user_id`, `Mapping direct (snake_case conservé)`,
+  [`viewing_logs.json .content_id`], `stg_viewing_logs .content_id`, `Mapping direct`,
+  [`viewing_logs.json .watch_duration_seconds`], `stg_viewing_logs .watch_duration_seconds`, `Mapping direct (type INTEGER)`,
+  [`viewing_logs.json .start_timestamp`], `stg_viewing_logs .start_timestamp`, `Conversion au format TIMESTAMP BigQuery`,
+  [`contents.csv .duration_minutes`], `stg_contents .duration_minutes`, `Mapping direct (type INTEGER)`,
+  [`users.csv .registration_date`], `stg_users .registration_date`, `Conversion au format DATE`,
+  [`users.csv .country`], `stg_users .country`, `Standardisation des codes pays (FR, BE, CH)`,
+  [`social_media_mentions.json .mention_text`], `stg_social_media .mention_text`, `Nettoyage minimal (trim, suppression HTML)`,
+  [`social_media_mentions.json .mention_text`], `stg_social_media .sentiment_score`, `Simulation d'un score 0/1/2 en attendant une librairie NLP`,
 )
 
 #table(
-  columns: (auto, auto, auto),
+  columns: (30%, 30%, 40%),
   stroke: (x: 1pt),
   align: (left, left, left),
   [*Staging*], [*Champ cible (Gold)*], [*Règle de transformation*],
-  [`stg_viewing_logs.session_id`], `FCT_Viewings.viewing_sk`, `Génération d'une clé de substitution (combinaison session_id + user_id)`,
-  [`stg_viewing_logs.user_id`], `FCT_Viewings.user_fk`, `Jointure sur DIM_Users.user_id`,
-  [`stg_viewing_logs.content_id`], `FCT_Viewings.content_fk`, `Jointure sur DIM_Content.content_id`,
-  [`stg_viewing_logs.start_timestamp`], `FCT_Viewings.date_fk`, `Dérivation de la date YYYYMMDD et jointure sur DIM_Date`,
-  [`stg_viewing_logs.device_type`], `FCT_Viewings.device_fk`, `Jointure sur DIM_Devices (device_type + os)`,
-  [`stg_viewing_logs.os`], `DIM_Devices.os`, `Standardisation des libellés systèmes (Android TV, iOS, etc.)`,
-  [`stg_viewing_logs.watch_duration_seconds`], `FCT_Viewings.view_duration_minutes`, `Division par 60 et arrondi à deux décimales`,
-  [`stg_viewing_logs.watch_duration_seconds`], `FCT_Viewings.completion_rate`, `watch_duration_seconds / (stg_contents.duration_minutes * 60) avec gestion division par zéro`,
-  [`FCT_Viewings.completion_rate`], `FCT_Viewings.is_completed_view`, `CASE WHEN completion_rate >= 0.9 THEN TRUE ELSE FALSE END`,
+  [`stg_viewing_logs .session_id`], `FCT_Viewings .viewing_sk`, `Génération d'une clé de substitution (combinaison session_id + user_id)`,
+  [`stg_viewing_logs .user_id`], `FCT_Viewings .user_fk`, `Jointure sur DIM_Users.user_id`,
+  [`stg_viewing_logs .content_id`], `FCT_Viewings .content_fk`, `Jointure sur DIM_Content.content_id`,
+  [`stg_viewing_logs .content_id`], `FCT_Viewings .series_fk`, `Jointure sur DIM_Series via DIM_Content`,
+  [`stg_viewing_logs .start_timestamp`], `FCT_Viewings .date_fk`, `Dérivation de la date YYYYMMDD et jointure sur DIM_Date`,
+  [`stg_viewing_logs .device_type`], `FCT_Viewings .device_fk`, `Jointure sur DIM_Devices (device_type + os)`,
+  [`stg_viewing_logs .os`], `DIM_Devices .os`, `Standardisation des libellés systèmes (Android TV, iOS, etc.)`,
+  [`stg_viewing_logs .watch_duration_seconds`], `FCT_Viewings .view_duration_minutes`, `Division par 60 et arrondi à deux décimales`,
+  [`stg_viewing_logs .watch_duration_seconds`], `FCT_Viewings .completion_rate`, `watch_duration_seconds / (stg_contents.duration_minutes * 60) avec gestion division par zéro`,
+  [`FCT_Viewings .completion_rate`], `FCT_Viewings .is_completed_view`, `CASE WHEN completion_rate >= 0.9 THEN TRUE ELSE FALSE END`,
 )
 
-= Annexe <annexe>
-// Contenu de l'annexe à ajouter si nécessaire.
+#pagebreak()
+
+#bibliography("references.yml", title: "Annexe")
