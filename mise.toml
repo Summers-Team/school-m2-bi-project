@@ -1,6 +1,7 @@
 [tools]
 gcloud = "latest"
 opentofu = "latest"
+typst = "latest"
 uv = 'latest'
 
 [hooks]
